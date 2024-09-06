@@ -1,37 +1,13 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useStore } from "../store";
 
 const userInfo = ref(null);
 const error = ref(null);
 
-const fetchUserInfo = async () => {
-  try {
-    const token = localStorage.getItem("token");
+const store = useStore();
 
-    if (!token) {
-      throw new Error("No token found");
-    }
-
-    const response = await fetch("http://localhost:3000/userinfo", {
-      method: "GET",
-      headers: {
-        Authorization: token,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch user info");
-    }
-
-    const data = await response.json();
-    userInfo.value = data.user;
-  } catch (err) {
-    error.value = err.message;
-  }
-};
-
-onMounted(fetchUserInfo);
+onMounted(async () => (userInfo.value = await store.getUserInfo()));
 </script>
 
 <template>

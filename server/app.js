@@ -101,3 +101,69 @@ async function verifyToken(req, res, next) {
 app.get('/userinfo', verifyToken, (req, res) => {
   res.json({ user: req.user });
 });
+
+
+
+
+app.post('/posts', verifyToken, async (req, res) => {
+  const { title, description } = req.body;
+
+  const user_id = req.user.id
+
+  const insertQuery = `INSERT INTO posts(title, content, user_id) VALUES($1, $2, $3) RETURNING *`;
+
+  try {
+    const result = await client.query(insertQuery, [title, description, user_id]);
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error on add post:', err);
+    res.status(500).send('Error on add post');
+  }
+})
+
+
+app.get('/posts', verifyToken, async (req, res) => {
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+
+  try {
+    const query = 'SELECT * FROM posts';
+    client.query(query, (err, result) => {
+      if (!err) {
+        res.status(200).json(result.rows);
+      }
+    });
+  } catch (err) {
+    console.error('Error on get posts:', err);
+    res.status(500).send('Error on get posts');
+  }
+})
+
+
+app.get('/posts/:id', verifyToken, async (req, res) => {
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+  const postId = req.params.id;
+
+  const insertQuery = `SELECT
+                         posts.*,
+                         "usersReg".u_name,
+                         "usersReg".u_email
+                       FROM
+                         posts
+                       JOIN
+                         "usersReg" ON "usersReg".id = posts.user_id
+                       WHERE
+                         posts.id = $1`;
+  try {
+    const result = await client.query(insertQuery, [postId]);
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Error on get post:', error);
+    res.status(500).send('Error on get post');
+  }
+
+  client.end;
+})

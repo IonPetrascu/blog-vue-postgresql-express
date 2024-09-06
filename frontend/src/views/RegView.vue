@@ -1,38 +1,21 @@
 <script setup>
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { useStore } from "../store";
 
 const email = ref("");
 const name = ref("");
 const password = ref("");
 
-const router = useRouter();
+const store = useStore();
 
-const submitForm = async () => {
-  const response = await fetch("http://localhost:3000/register", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: email.value,
-      name: name.value,
-      password: password.value,
-    }),
-  });
-
-  if (!response.ok) {
-    return console.error("Registration failed:", await response.text());
-  }
-  const data = await response.json();
-  console.log(data);
-  router.push("/auth");
+const handleSubmit = () => {
+  store.registerUser(email.value, name.value, password.value);
 };
 </script>
 <template>
   <div>
     <h3>Registration</h3>
-    <form class="form" @submit.prevent="submitForm">
+    <form class="form" @submit.prevent="handleSubmit">
       <input
         v-model="email"
         type="email"
