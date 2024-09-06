@@ -1,12 +1,26 @@
-<script setup></script>
+<script setup>
+import { onBeforeMount, onMounted } from "vue";
+import { useStore } from "./store";
+
+const store = useStore();
+
+onBeforeMount(() => store.checkToken());
+</script>
 
 <template>
   <main class="wrapper">
     <header class="header">
-      <h1>SomeApp</h1>
-      <nav class="nav">
+      <router-link to="/"
+        ><h1>SomeApp {{ store.isAuth }}</h1></router-link
+      >
+
+      <nav v-if="!store.isAuth" class="nav">
         <RouterLink to="/registration">Registration</RouterLink>
-        <RouterLink to="/auth">Authorisation</RouterLink>
+        <RouterLink to="/login">Authorisation</RouterLink>
+      </nav>
+      <nav v-else class="nav">
+        <RouterLink to="/posts">Posts</RouterLink>
+        <RouterLink to="/profile">Profile</RouterLink>
       </nav>
     </header>
 
