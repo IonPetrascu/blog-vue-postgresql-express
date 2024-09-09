@@ -1,17 +1,40 @@
 <script setup>
 import { useRoute } from "vue-router";
 import { useStore } from "../store";
-import { onMounted } from "vue";
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
+import Comment from "./Comment.vue";
 
 const route = useRoute();
 const id = route.params.id;
 const store = useStore();
 const post = ref(null);
+const comments = ref([]);
+const newComment = ref("");
+const respondCommentId = ref(null);
 
 onMounted(async () => {
   post.value = await store.getSinglePost(id);
+  comments.value = await store.getComments(id);
 });
+
+const submitComment = async () => {
+  if (!newComment.value.trim()) return;
+
+  const postId = id;
+  const content = newComment.value;
+  const parent_comment_id = respondCommentId.value;
+
+  respondCommentId.value = null;
+  newComment.value = "";
+
+  await store.addComment(postId, content, parent_comment_id);
+  comments.value = await store.getComments(id);
+};
+
+const setRespondCommentId = (id) => {
+  respondCommentId.value = id;
+};
+const removeRespondCommentId = () => (respondCommentId.value = null);
 </script>
 
 <template>
@@ -29,6 +52,29 @@ onMounted(async () => {
         Created at: <span class="post-date">{{ post.created_at }}</span>
       </p>
     </div>
+    <ul class="post-comments">
+      <Comment
+        v-for="comment in comments"
+        :key="comment.id"
+        :comment="comment"
+        @setRespondCommentId="setRespondCommentId"
+      />
+    </ul>
+    <form class="form-comment" @submit.prevent="submitComment">
+      <div v-if="respondCommentId !== null" class="response-info">
+        <button type="button" class="btn-clear" @click="removeRespondCommentId">
+          X
+        </button>
+        Responding to comment ID: {{ respondCommentId }}
+      </div>
+      <input
+        v-model="newComment"
+        type="text"
+        placeholder="Your comment"
+        class="comment-input"
+      />
+      <button type="submit" class="btn-submit">Send</button>
+    </form>
   </div>
 </template>
 
@@ -73,5 +119,48 @@ onMounted(async () => {
 .post-date {
   color: #999;
   font-style: italic;
+}
+
+.form-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.response-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #666;
+}
+
+.btn-clear {
+  background: transparent;
+  border: none;
+  color: #ff0000;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.comment-input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.btn-submit {
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 10px;
+  cursor: pointer;
+}
+.post-comments {
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 </style>

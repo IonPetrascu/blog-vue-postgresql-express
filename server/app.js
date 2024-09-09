@@ -12,10 +12,10 @@ app.use(bodyParser.json());
 
 
 const port = process.env.PORT || 3000
+
 app.listen(port, () => {
   console.log(`Sever is now listening at port ${port}`);
 })
-
 
 app.post('/register', async (req, res) => {
   try {
@@ -38,7 +38,6 @@ app.post('/register', async (req, res) => {
     res.status(500).send('Server Error');
   }
 });
-
 
 app.post('/login', async (req, res) => {
 
@@ -102,9 +101,6 @@ app.get('/userinfo', verifyToken, (req, res) => {
   res.json({ user: req.user });
 });
 
-
-
-
 app.post('/posts', verifyToken, async (req, res) => {
   const { title, description } = req.body;
 
@@ -120,7 +116,6 @@ app.post('/posts', verifyToken, async (req, res) => {
     res.status(500).send('Error on add post');
   }
 })
-
 
 app.get('/posts', verifyToken, async (req, res) => {
   if (!req.user) {
@@ -139,7 +134,6 @@ app.get('/posts', verifyToken, async (req, res) => {
     res.status(500).send('Error on get posts');
   }
 })
-
 
 app.get('/posts/:id', verifyToken, async (req, res) => {
   if (!req.user) {
@@ -166,4 +160,62 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
   }
 
   client.end;
+})
+
+app.get('/comments/:id', verifyToken, async (req, res) => {
+  const postId = req.params.id
+
+  const insertQuery = `
+    SELECT "comments".*, "usersReg".u_name
+    FROM comments
+    INNER JOIN "usersReg" ON "comments".user_id = "usersReg".id
+    WHERE "comments".post_id = $1;
+  `
+  /*  const insertQuery = `SELECT * FROM "comments" WHERE post_id = $1`; */
+  try {
+    const result = await client.query(insertQuery, [postId]);
+    const comments = result.rows;
+
+    const map = new Map();
+    const roots = [];
+    comments.forEach(comment => {
+      map.set(comment.id, { ...comment, replies: [] });
+    });
+    comments.forEach(comment => {
+      if (comment.parent_comment_id) {
+        const parent = map.get(comment.parent_comment_id);
+        if (parent) {
+          parent.replies.push(map.get(comment.id));
+        }
+      } else {
+        roots.push(map.get(comment.id));
+      }
+    });
+
+
+    res.status(200).json(roots);
+  } catch (error) {
+    console.error('Error on get comments:', error);
+    res.status(500).send('Error on get comments');
+  }
+
+  client.end;
+})
+
+app.post('/comments', verifyToken, async (req, res) => {
+  const { postId, content, parent_comment_id } = req.body;
+
+  const user_id = req.user.id
+
+  const insertQuery = `INSERT INTO "comments" (post_id, content,parent_comment_id ,user_id) VALUES($1, $2, $3,$4) RETURNING *`;
+
+  try {
+    const result = await client.query(insertQuery, [postId, content, parent_comment_id, user_id]);
+    console.log(result.rows);
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error on add post:', err);
+    res.status(500).send('Error on add post');
+  }
 })
