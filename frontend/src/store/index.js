@@ -164,6 +164,60 @@ export const useStore = defineStore('store', () => {
 
   };
 
+  const getComments = async (id) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/comments/${id}`, {
+        method: "GET",
+        headers: {
+          Authorization: token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get comments");
+      }
+
+      const data = await response.json()
+      return data
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+
+  };
+
+  const addComment = async (postId, content, parent_comment_id) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/comments`, {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          postId, content, parent_comment_id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add comments");
+      }
+
+      const data = await response.json()
+      console.log(data);
+
+      return data
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+
+  };
+
 
 
   return {
@@ -175,6 +229,8 @@ export const useStore = defineStore('store', () => {
     getPosts,
     getSinglePost,
     getUserInfo,
-    checkToken
+    checkToken,
+    getComments,
+    addComment
   }
 })
