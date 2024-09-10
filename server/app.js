@@ -121,14 +121,46 @@ app.get('/posts', verifyToken, async (req, res) => {
   if (!req.user) {
     return res.status(401).send('Token not found');
   }
+  const user_id = req.user.id;
+
+
 
   try {
-    const query = 'SELECT * FROM posts';
-    client.query(query, (err, result) => {
-      if (!err) {
-        res.status(200).json(result.rows);
-      }
-    });
+    const query = `
+    WITH like_dislike_counts AS (
+  SELECT
+    v.entity_id AS post_id,
+    COUNT(CASE WHEN v.vote_type = TRUE THEN 1 END)::INTEGER AS likes_count,
+    COUNT(CASE WHEN v.vote_type = FALSE THEN 1 END)::INTEGER AS dislikes_count
+  FROM votes v
+  WHERE v.entity_type = 'post'
+  GROUP BY v.entity_id
+),
+user_votes AS (
+  SELECT
+    v.entity_id AS post_id,
+    MAX(CASE WHEN v.user_id = $1 THEN CASE WHEN v.vote_type THEN 1 ELSE 0 END ELSE NULL END) AS user_vote
+  FROM votes v
+  WHERE v.entity_type = 'post'
+  GROUP BY v.entity_id
+)
+SELECT
+  p.*,
+  COALESCE(lc.likes_count, 0) AS likes_count,
+  COALESCE(lc.dislikes_count, 0) AS dislikes_count,
+  uv.user_vote,
+  COUNT(c.id)::INTEGER AS comments_count
+FROM posts p
+LEFT JOIN like_dislike_counts lc ON p.id = lc.post_id
+LEFT JOIN user_votes uv ON p.id = uv.post_id
+LEFT JOIN comments c ON p.id = c.post_id
+GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote
+ORDER BY p.created_at DESC;
+    `;
+
+    const result = await client.query(query, [user_id]);
+
+    res.status(200).json(result.rows);
   } catch (err) {
     console.error('Error on get posts:', err);
     res.status(500).send('Error on get posts');
@@ -171,7 +203,6 @@ app.get('/comments/:id', verifyToken, async (req, res) => {
     INNER JOIN "usersReg" ON "comments".user_id = "usersReg".id
     WHERE "comments".post_id = $1;
   `
-  /*  const insertQuery = `SELECT * FROM "comments" WHERE post_id = $1`; */
   try {
     const result = await client.query(insertQuery, [postId]);
     const comments = result.rows;
@@ -219,3 +250,50 @@ app.post('/comments', verifyToken, async (req, res) => {
     res.status(500).send('Error on add post');
   }
 })
+
+app.post('/votes', verifyToken, async (req, res) => {
+  const { entity_id, entity_type, vote_type } = req.body;
+
+  const user_id = req.user.id
+
+  const insertQuery = `INSERT INTO "votes" (user_id, entity_id, entity_type, vote_type)
+    VALUES($1, $2, $3, $4)
+    ON CONFLICT (user_id, entity_id, entity_type)
+    DO UPDATE SET vote_type = EXCLUDED.vote_type
+    RETURNING *`;
+
+  try {
+    const result = await client.query(insertQuery, [user_id, entity_id, entity_type, vote_type]);
+    console.log(result.rows);
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error on add post:', err);
+    res.status(500).send('Error on add post');
+  }
+})
+
+app.delete('/votes', verifyToken, async (req, res) => {
+  const { entity_id, entity_type } = req.body;
+
+  const user_id = req.user.id;
+
+  const deleteQuery = `DELETE FROM "votes"
+    WHERE user_id = $1 AND entity_id = $2 AND entity_type = $3
+    RETURNING *`;
+
+  try {
+    const result = await client.query(deleteQuery, [user_id, entity_id, entity_type]);
+
+    if (result.rowCount === 0) {
+      return res.status(404).send('Vote not found');
+    }
+
+    console.log('Deleted vote:', result.rows);
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error on delete vote:', err);
+    res.status(500).send('Error on delete vote');
+  }
+});

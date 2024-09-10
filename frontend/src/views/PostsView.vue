@@ -39,7 +39,28 @@ const handleSubmit = () => store.createPost(title.value, description.value);
         <p class="post-description">
           {{ post.content }}
         </p>
+        <span>{{ post.comments_count }}</span>
         <RouterLink :to="`/post/${post.id}`">Details</RouterLink>
+        <div>
+          <button
+            class="btn-vote"
+            :class="{ active: post.user_vote === 1 }"
+            @click="
+              () => store.addVoteToPost(true, post.id, 'post')
+            "
+          >
+            Like {{ post.likes_count }}
+          </button>
+          <button
+            class="btn-vote"
+            :class="{ active: post.user_vote === 0 }"
+            @click="
+              () => store.addVoteToPost(false, post.id, 'post')
+            "
+          >
+            Dislike {{ post.dislikes_count }}
+          </button>
+        </div>
       </li>
     </ul>
   </div>
@@ -110,4 +131,7 @@ const handleSubmit = () => store.createPost(title.value, description.value);
   color: #34495e;
 }
 
+.btn-vote.active {
+  color: blue;
+}
 </style>

@@ -107,7 +107,12 @@ export const useStore = defineStore('store', () => {
         throw new Error("Failed to add post");
       }
       const post = await response.json()
-      posts.value = [...posts.value, post]
+
+      post.likes_count = 0
+      post.dislikes_count = 0
+      post.user_vote = null
+
+      posts.value.unshift(post)
     } catch (err) {
       err.value = err.message;
     }
@@ -219,6 +224,108 @@ export const useStore = defineStore('store', () => {
   };
 
 
+  const addVote = async (entity_id, entity_type, vote_type) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/votes`, {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          entity_id, entity_type, vote_type
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add votes");
+      }
+
+      const data = await response.json()
+      console.log(data);
+
+      return data
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+
+  };
+
+  const deleteVote = async (entity_id, entity_type) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/votes`, {
+        method: "DELETE",
+        headers: {
+          Authorization: token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          entity_id, entity_type
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete votes");
+      }
+
+      const data = await response.json()
+      console.log(data);
+
+      return data
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+
+  };
+
+
+  const addVoteToPost = async (is_like, target_id, entity_type) => {
+    const newVote = is_like ? 1 : 0;
+    const findPost = posts.value.find((post) => post.id === target_id);
+
+    if (!findPost) {
+      console.error('Post not found');
+      return;
+    }
+
+
+    if (findPost.user_vote === newVote) {
+      findPost.user_vote = null;
+      if (is_like) {
+        findPost.likes_count -= 1;
+      } else {
+        findPost.dislikes_count -= 1;
+      }
+      await deleteVote(target_id, entity_type);
+    } else {
+
+      if (findPost.user_vote !== null) {
+        if (is_like) {
+          findPost.likes_count += 1;
+          findPost.dislikes_count -= 1;
+        } else {
+          findPost.likes_count -= 1;
+          findPost.dislikes_count += 1;
+        }
+      } else {
+
+        if (is_like) {
+          findPost.likes_count += 1;
+        } else {
+          findPost.dislikes_count += 1;
+        }
+      }
+
+      findPost.user_vote = newVote;
+      await addVote(target_id, entity_type, is_like);
+    }
+  };
 
   return {
     isAuth,
@@ -231,6 +338,8 @@ export const useStore = defineStore('store', () => {
     getUserInfo,
     checkToken,
     getComments,
-    addComment
+    addComment,
+    addVote,
+    addVoteToPost
   }
 })
