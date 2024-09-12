@@ -25,6 +25,7 @@ onBeforeMount(async () => {
         </nav>
         <nav v-else class="nav">
           <RouterLink to="/posts">Posts</RouterLink>
+          <RouterLink to="/add-post">Create post</RouterLink>
           <RouterLink to="/profile">Profile</RouterLink>
         </nav>
       </header>
@@ -41,7 +42,7 @@ onBeforeMount(async () => {
 .wrapper {
   max-width: 1320px;
   margin: 0 auto;
-  height: 100vh;
+  min-height: 100vh;
 }
 .header {
   height: 80px;
