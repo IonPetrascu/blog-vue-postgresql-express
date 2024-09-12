@@ -149,12 +149,16 @@ SELECT
   COALESCE(lc.likes_count, 0) AS likes_count,
   COALESCE(lc.dislikes_count, 0) AS dislikes_count,
   uv.user_vote,
-  COUNT(c.id)::INTEGER AS comments_count
+  COUNT(c.id)::INTEGER AS comments_count,
+  ur.id AS user_id,
+  ur.u_name AS user_name,
+  ur.u_email AS user_email
 FROM posts p
 LEFT JOIN like_dislike_counts lc ON p.id = lc.post_id
 LEFT JOIN user_votes uv ON p.id = uv.post_id
 LEFT JOIN comments c ON p.id = c.post_id
-GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote
+LEFT JOIN "usersReg" ur ON p.user_id = ur.id
+GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote,ur.id, ur.u_name, ur.u_email
 ORDER BY p.created_at DESC;
     `;
 
