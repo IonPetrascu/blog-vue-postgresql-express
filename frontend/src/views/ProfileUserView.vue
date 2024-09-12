@@ -1,13 +1,10 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useStore } from "../store";
 
-const userInfo = ref(null);
+
 const error = ref(null);
-
 const store = useStore();
-
-onMounted(async () => (userInfo.value = await store.getUserInfo()));
 </script>
 
 <template>
@@ -16,9 +13,9 @@ onMounted(async () => (userInfo.value = await store.getUserInfo()));
     <div v-if="error">
       <p>Error: {{ error }}</p>
     </div>
-    <div v-if="userInfo">
-      <p>Name: {{ userInfo.u_name }}</p>
-      <p>Email: {{ userInfo.u_email }}</p>
+    <div v-if="store.userInfo">
+      <p>Name: {{ store.userInfo.u_name }}</p>
+      <p>Email: {{ store.userInfo.u_email }}</p>
     </div>
     <div v-else>
       <p>Loading...</p>

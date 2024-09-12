@@ -1,7 +1,7 @@
 <script setup>
 import { useRoute } from "vue-router";
 import { useStore } from "../store";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import Comment from "./Comment.vue";
 
 const route = useRoute();
@@ -11,11 +11,20 @@ const post = ref(null);
 const comments = ref([]);
 const newComment = ref("");
 const respondCommentId = ref(null);
+const commentsKey = ref(0);
 
 onMounted(async () => {
   post.value = await store.getSinglePost(id);
   comments.value = await store.getComments(id);
 });
+
+watch(
+  comments,
+  () => {
+    commentsKey.value += 1;
+  },
+  { deep: true }
+);
 
 const submitComment = async () => {
   if (!newComment.value.trim()) return;
@@ -35,6 +44,27 @@ const setRespondCommentId = (id) => {
   respondCommentId.value = id;
 };
 const removeRespondCommentId = () => (respondCommentId.value = null);
+
+const addVoteToComment = async ({
+  is_like,
+  target_id,
+  entity_type,
+  user_vote,
+}) => {
+  try {
+    if (user_vote === null) {
+      await store.addVote(target_id, entity_type, is_like);
+    } else {
+      if (is_like === user_vote) {
+        return await store.deleteVote(target_id, entity_type);
+      } else {
+        return await store.addVote(target_id, entity_type, is_like);
+      }
+    }
+  } catch (error) {
+    console.error("Error processing vote:", error);
+  }
+};
 </script>
 
 <template>
@@ -52,12 +82,13 @@ const removeRespondCommentId = () => (respondCommentId.value = null);
         Created at: <span class="post-date">{{ post.created_at }}</span>
       </p>
     </div>
-    <ul class="post-comments">
+    <ul :key="commentsKey" class="post-comments">
       <Comment
         v-for="comment in comments"
         :key="comment.id"
         :comment="comment"
         @setRespondCommentId="setRespondCommentId"
+        @add-vote-to-comment="addVoteToComment"
       />
     </ul>
     <form class="form-comment" @submit.prevent="submitComment">
@@ -162,5 +193,6 @@ const removeRespondCommentId = () => (respondCommentId.value = null);
 .post-comments {
   border: 1px solid #ddd;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 5px;
 }
 </style>

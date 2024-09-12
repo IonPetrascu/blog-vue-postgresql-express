@@ -196,15 +196,40 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
 
 app.get('/comments/:id', verifyToken, async (req, res) => {
   const postId = req.params.id
+  const userId = req.user.id; // ID текущего пользователя
 
   const insertQuery = `
-    SELECT "comments".*, "usersReg".u_name
+    WITH comment_likes AS (
+      SELECT
+        entity_id AS comment_id,
+        COUNT(CASE WHEN vote_type = true THEN 1 END) AS like_count,
+        COUNT(CASE WHEN vote_type = false THEN 1 END) AS dislike_count
+      FROM votes
+      WHERE entity_type = 'comment'
+      GROUP BY entity_id
+    ),
+    user_likes AS (
+      SELECT
+        entity_id AS comment_id,
+        vote_type
+      FROM votes
+      WHERE entity_type = 'comment' AND user_id = $2
+    )
+    SELECT
+      comments.*,
+      "usersReg".u_name,
+      COALESCE(comment_likes.like_count, 0) AS like_count,
+      COALESCE(comment_likes.dislike_count, 0) AS dislike_count,
+      user_likes.vote_type AS user_vote
     FROM comments
-    INNER JOIN "usersReg" ON "comments".user_id = "usersReg".id
-    WHERE "comments".post_id = $1;
+    INNER JOIN "usersReg" ON comments.user_id = "usersReg".id
+    LEFT JOIN comment_likes ON comments.id = comment_likes.comment_id
+    LEFT JOIN user_likes ON comments.id = user_likes.comment_id
+    WHERE comments.post_id = $1
+    ORDER BY comments.created_at;
   `
   try {
-    const result = await client.query(insertQuery, [postId]);
+    const result = await client.query(insertQuery, [postId, userId]);
     const comments = result.rows;
 
     const map = new Map();
@@ -223,7 +248,6 @@ app.get('/comments/:id', verifyToken, async (req, res) => {
       }
     });
 
-
     res.status(200).json(roots);
   } catch (error) {
     console.error('Error on get comments:', error);
@@ -231,7 +255,7 @@ app.get('/comments/:id', verifyToken, async (req, res) => {
   }
 
   client.end;
-})
+});
 
 app.post('/comments', verifyToken, async (req, res) => {
   const { postId, content, parent_comment_id } = req.body;
@@ -242,7 +266,6 @@ app.post('/comments', verifyToken, async (req, res) => {
 
   try {
     const result = await client.query(insertQuery, [postId, content, parent_comment_id, user_id]);
-    console.log(result.rows);
 
     res.status(200).json(result.rows);
   } catch (err) {
@@ -264,7 +287,6 @@ app.post('/votes', verifyToken, async (req, res) => {
 
   try {
     const result = await client.query(insertQuery, [user_id, entity_id, entity_type, vote_type]);
-    console.log(result.rows);
 
     res.status(200).json(result.rows);
   } catch (err) {
@@ -289,7 +311,6 @@ app.delete('/votes', verifyToken, async (req, res) => {
       return res.status(404).send('Vote not found');
     }
 
-    console.log('Deleted vote:', result.rows);
 
     res.status(200).json(result.rows);
   } catch (err) {
