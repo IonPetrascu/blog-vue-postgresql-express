@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap");
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,4 +13,15 @@ button {
   border: none;
   cursor: pointer;
   background: transparent;
+}
+body {
+  font-family: "Montserrat", sans-serif;
+}
+:root {
+  --blue: #180161;
+  --violet: #4f1787;
+  --rose: #eb3678;
+  --orange: #fb773c;
+  --white: #ffffff;
+  --black: #000000;
 }

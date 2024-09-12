@@ -34,29 +34,37 @@ const handleSubmit = () => store.createPost(title.value, description.value);
     </div>
     <ul class="post-list">
       <li v-for="post in store.posts" :key="post.id" class="post">
-        <h3 class="post-title">{{ post.title }}</h3>
-        <span>User id {{ post.user_id }}</span>
+        <div class="post-header">
+          <div class="post-user-info">
+            <img
+              class="post-user-img"
+              src="../assets/default-user-img.jpg"
+              :alt="post.u_name"
+            />
+            <span>{{ store.userInfo.u_name }}</span>
+          </div>
+
+          <h3 class="post-title">{{ post.title }}</h3>
+          <div class="post-settings" v-if="post.user_id === store.userInfo.id">
+            <button>Delete</button>
+          </div>
+        </div>
         <p class="post-description">
           {{ post.content }}
         </p>
-        <span>{{ post.comments_count }}</span>
         <RouterLink :to="`/post/${post.id}`">Details</RouterLink>
-        <div>
+        <div class="likes-dislikes">
           <button
             class="btn-vote"
             :class="{ active: post.user_vote === 1 }"
-            @click="
-              () => store.addVoteToPost(true, post.id, 'post')
-            "
+            @click="() => store.addVoteToPost(true, post.id, 'post')"
           >
             Like {{ post.likes_count }}
           </button>
           <button
             class="btn-vote"
             :class="{ active: post.user_vote === 0 }"
-            @click="
-              () => store.addVoteToPost(false, post.id, 'post')
-            "
+            @click="() => store.addVoteToPost(false, post.id, 'post')"
           >
             Dislike {{ post.dislikes_count }}
           </button>
@@ -84,24 +92,44 @@ const handleSubmit = () => store.createPost(title.value, description.value);
 }
 
 .post {
+  display: flex;
+  flex-direction: column;
   background-color: #f9f9f9;
   border: 1px solid #ddd;
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  gap: 10px;
 }
 
 .post-title {
-  font-size: 1.8em;
+  font-size: 1.9em;
   font-weight: bold;
   color: #2c3e50;
-  margin-bottom: 10px;
 }
-
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.post-settings {
+  margin-left: auto;
+}
+.post-user-img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-position: center;
+  background-size: cover;
+}
+.post-user-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
 .post-description {
   font-size: 1.2em;
   color: #7f8c8d;
-  margin-bottom: 20px;
 }
 
 .comments {
@@ -133,5 +161,10 @@ const handleSubmit = () => store.createPost(title.value, description.value);
 
 .btn-vote.active {
   color: blue;
+}
+.likes-dislikes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 </style>

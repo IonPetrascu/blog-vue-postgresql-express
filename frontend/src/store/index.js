@@ -6,7 +6,7 @@ export const useStore = defineStore('store', () => {
   const isAuth = ref(false)
   const posts = ref(null)
   const router = useRouter();
-
+  const userInfo = ref(null)
 
   const checkToken = () => {
     const token = localStorage.getItem('token')
@@ -78,8 +78,9 @@ export const useStore = defineStore('store', () => {
       }
 
       const { user } = await response.json();
+      const { u_password, ...data } = await user
+      userInfo.value = data
 
-      return user;
     } catch (err) {
       console.error(err.message);
       return { error: err.message };
@@ -213,7 +214,6 @@ export const useStore = defineStore('store', () => {
       }
 
       const data = await response.json()
-      console.log(data);
 
       return data
     } catch (err) {
@@ -244,7 +244,6 @@ export const useStore = defineStore('store', () => {
       }
 
       const data = await response.json()
-      console.log(data);
 
       return data
     } catch (err) {
@@ -274,7 +273,6 @@ export const useStore = defineStore('store', () => {
       }
 
       const data = await response.json()
-      console.log(data);
 
       return data
     } catch (err) {
@@ -327,9 +325,11 @@ export const useStore = defineStore('store', () => {
     }
   };
 
+
   return {
     isAuth,
     posts,
+    userInfo,
     loginUser,
     registerUser,
     createPost,
@@ -340,6 +340,7 @@ export const useStore = defineStore('store', () => {
     getComments,
     addComment,
     addVote,
-    addVoteToPost
+    addVoteToPost,
+    deleteVote
   }
 })
