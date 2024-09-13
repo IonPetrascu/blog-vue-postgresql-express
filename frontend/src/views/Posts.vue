@@ -1,11 +1,10 @@
 <script setup>
 import Post from "../components/Post.vue";
-import { onMounted } from "vue";
 import { useStore } from "../store";
 
 const store = useStore();
 
-onMounted(() => store.getPosts());
+
 </script>
 <template>
   <div class="wrapper">

@@ -18,7 +18,18 @@ const handleVote = (vote) => {
     <button v-if="post.user_id === store.userInfo.id" class="delete-post-btn">
       <img src="../assets/close-icon.svg" alt="delete post" />
     </button>
-    <img class="post-img" src="../assets/bich.jpg" alt="bich" />
+    <img
+      v-if="post.img"
+      class="post-img"
+      :src="`http://localhost:3000/${post.img}`"
+      alt=""
+    />
+    <img
+      class="post-img"
+      v-else
+      src="../assets/default-post-image.png"
+      alt=""
+    />
     <div class="post-content">
       <span class="post-theme">Technology</span>
       <router-link :to="`/post/${post.id}`">
@@ -84,7 +95,9 @@ const handleVote = (vote) => {
   border: 1px solid #e8e8ea;
   border-radius: 12px;
   position: relative;
+  max-height: 495px;
 }
+
 .post-title {
   font-weight: 600;
   font-size: 24px;

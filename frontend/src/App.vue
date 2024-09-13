@@ -1,5 +1,5 @@
 <script setup>
-import { onBeforeMount, onMounted } from "vue";
+import { onBeforeMount } from "vue";
 import { useStore } from "./store";
 
 const store = useStore();
@@ -7,6 +7,7 @@ const store = useStore();
 onBeforeMount(async () => {
   await store.checkToken();
   await store.getUserInfo();
+  await store.getPosts();
 });
 </script>
 
@@ -38,11 +39,11 @@ onBeforeMount(async () => {
 .main {
   background: url("./assets/bg-blog.jpg");
   background-size: cover;
+  min-height: 100vh;
 }
 .wrapper {
   max-width: 1320px;
   margin: 0 auto;
-  min-height: 100vh;
 }
 .header {
   height: 80px;
