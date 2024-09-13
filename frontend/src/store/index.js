@@ -88,20 +88,16 @@ export const useStore = defineStore('store', () => {
   };
 
 
-  const createPost = async (title, description) => {
+  const createPost = async (formData) => {
     try {
       const token = checkToken();
 
       const response = await fetch("http://localhost:3000/posts", {
         method: "POST",
         headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
+          Authorization: token
         },
-        body: JSON.stringify({
-          title,
-          description
-        }),
+        body: formData,
       });
 
       if (!response.ok) {

@@ -5,10 +5,19 @@ const cors = require('cors')
 const bcrypt = require('bcryptjs')
 const client = require('./connection')
 const jwt = require('jsonwebtoken')
+const fileUpload = require('express-fileupload')
+const { v4: uuidv4 } = require('uuid');
+const path = require('path')
+
 client.connect();
 const app = express();
+
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(fileUpload({}))
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.resolve(__dirname, './static')));
+
 
 
 const port = process.env.PORT || 3000
@@ -102,19 +111,44 @@ app.get('/userinfo', verifyToken, (req, res) => {
 });
 
 app.post('/posts', verifyToken, async (req, res) => {
-  const { title, description } = req.body;
-
-  const user_id = req.user.id
-
-  const insertQuery = `INSERT INTO posts(title, content, user_id) VALUES($1, $2, $3) RETURNING *`;
-
   try {
-    const result = await client.query(insertQuery, [title, description, user_id]);
+    const { title, description } = req.body;
+
+    if (!title || !description) {
+      return res.status(400).json({ message: 'Title and description are required' });
+    }
+    const img = req.files ? req.files.img : null;
+    const user_id = req.user.id
+
+    let fileName = null
+    if (img) {
+      fileName = uuidv4() + '.jpg';
+      img.mv(path.resolve(__dirname, '..', 'server/static', fileName), (err) => {
+        if (err) {
+          console.error('Error moving file:', err);
+          return res.status(500).send('Error uploading image');
+        }
+      });
+    }
+
+
+    // Запрос к базе данных
+    const insertQuery = fileName
+      ? `INSERT INTO posts(title, content, user_id, img) VALUES($1, $2, $3, $4) RETURNING *`
+      : `INSERT INTO posts(title, content, user_id) VALUES($1, $2, $3) RETURNING *`;
+
+    const values = fileName
+      ? [title, description, user_id, fileName]
+      : [title, description, user_id];
+
+    const result = await client.query(insertQuery, values);
     res.status(200).json(result.rows[0]);
-  } catch (err) {
-    console.error('Error on add post:', err);
+
+  } catch (error) {
+    console.error('Error on add post:', error);
     res.status(500).send('Error on add post');
   }
+
 })
 
 app.get('/posts', verifyToken, async (req, res) => {
@@ -149,12 +183,16 @@ SELECT
   COALESCE(lc.likes_count, 0) AS likes_count,
   COALESCE(lc.dislikes_count, 0) AS dislikes_count,
   uv.user_vote,
-  COUNT(c.id)::INTEGER AS comments_count
+  COUNT(c.id)::INTEGER AS comments_count,
+  ur.id AS user_id,
+  ur.u_name AS user_name,
+  ur.u_email AS user_email
 FROM posts p
 LEFT JOIN like_dislike_counts lc ON p.id = lc.post_id
 LEFT JOIN user_votes uv ON p.id = uv.post_id
 LEFT JOIN comments c ON p.id = c.post_id
-GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote
+LEFT JOIN "usersReg" ur ON p.user_id = ur.id
+GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote,ur.id, ur.u_name, ur.u_email
 ORDER BY p.created_at DESC;
     `;
 
