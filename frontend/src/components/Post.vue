@@ -45,7 +45,9 @@ const handleVote = (vote) => {
             src="../assets/default-user-img.jpg"
             :alt="post.user_name"
           />
-          <h3 class="post-name">{{ post.user_name }}</h3>
+          <router-link :to="`/profile/${post.user_id}`" class="post-name">{{
+            post.user_name
+          }}</router-link>
 
           <time class="post-date"> {{ datePost }}</time>
         </div>

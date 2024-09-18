@@ -139,6 +139,54 @@ export const useStore = defineStore('store', () => {
 
   };
 
+  const getMyChats = async () => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch("http://localhost:3000/chats", {
+        method: "GET",
+        headers: {
+          Authorization: token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get post");
+      }
+      const chats = await response.json()
+      return chats
+    } catch (err) {
+      err.value = err.message;
+    }
+
+  };
+
+  const createChat = async (other_user_id, chat_name) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch("http://localhost:3000/chats", {
+        method: "POST",
+        headers: {
+          Authorization: token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          other_user_id, chat_name
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create chat");
+      }
+      const chats = await response.json()
+      return chats
+    } catch (err) {
+      err.value = err.message;
+    }
+
+  };
+
   const getSinglePost = async (id) => {
 
     try {
@@ -337,6 +385,8 @@ export const useStore = defineStore('store', () => {
     addComment,
     addVote,
     addVoteToPost,
-    deleteVote
+    deleteVote,
+    getMyChats,
+    createChat
   }
 })

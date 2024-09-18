@@ -27,7 +27,8 @@ onBeforeMount(async () => {
         <nav v-else class="nav">
           <RouterLink to="/posts">Posts</RouterLink>
           <RouterLink to="/add-post">Create post</RouterLink>
-          <RouterLink to="/profile">Profile</RouterLink>
+          <RouterLink to="/my-profile">Profile</RouterLink>
+          <RouterLink to="/chats">Chats</RouterLink>
         </nav>
       </header>
       <RouterView />
