@@ -480,12 +480,27 @@ app.get('/chats', verifyToken, async (req, res) => {
   const user_id = req.user.id;
 
   try {
-    const query = `
-      SELECT chats.id AS chat_id, chats.name
-      FROM chats
-      JOIN chat_users ON chats.id = chat_users.chat_id
-      WHERE chat_users.user_id = $1;
-    `;
+    const query = `SELECT
+  chats.id AS chat_id,
+  chats.name,
+  "usersReg".id AS user_id,
+  "usersReg".u_name AS user_name,
+  last_message.id AS message_id,
+  last_message.content AS last_message_content,
+  last_message.sent_at AS last_message_sent_at
+FROM chats
+JOIN chat_users AS cu1 ON chats.id = cu1.chat_id
+JOIN chat_users AS cu2 ON chats.id = cu2.chat_id
+JOIN "usersReg" ON "usersReg".id = cu2.user_id
+LEFT JOIN LATERAL (
+  SELECT m.id, m.content, m.sent_at
+  FROM messages m
+  WHERE m.chat_id = chats.id
+  ORDER BY m.sent_at DESC
+  LIMIT 1
+) last_message ON true
+WHERE cu1.user_id = $1
+  AND cu2.user_id != $1;`
 
     const result = await client.query(query, [user_id]);
 
@@ -496,38 +511,6 @@ app.get('/chats', verifyToken, async (req, res) => {
   }
 })
 
-/* app.post('/chats', verifyToken, async (req, res) => {
-  if (!req.user) {
-    return res.status(401).send('Token not found');
-  }
-  const user_id = req.user.id;
-
-  try {
-    const query = `
-    INSERT INTO chats (name,is_private)
-    VALUES ($1, $2)
-    RETURNING *
-    `;
-
-    const result = await client.query(query, ['New chat', true]);
-
-    if (result.rows[0].id) {
-      const query = `
-    INSERT INTO chat_users (chat_id,user_id)
-    VALUES ($1, $2)
-    RETURNING *
-    `;
-      const result = await client.query(query, [result.rows[0].id, user_id]);
-    }
-    console.log(result.rows);
-
-    res.status(200).json(result.rows);
-  } catch (err) {
-    console.error('Error on get chats:', err);
-    res.status(500).send('Error on get chats');
-  }
-})
- */
 
 app.post('/chats', verifyToken, async (req, res) => {
   console.log(req.body);
@@ -550,13 +533,11 @@ app.post('/chats', verifyToken, async (req, res) => {
     );
     const chatId = chatResult.rows[0].id;
 
-    // Вставка пользователя в чат
     await client.query(
       'INSERT INTO chat_users (chat_id, user_id) VALUES ($1, $2)',
       [chatId, user_id]
     );
 
-    // Вставка другого пользователя в чат
     await client.query(
       'INSERT INTO chat_users (chat_id, user_id) VALUES ($1, $2)',
       [chatId, other_user_id]

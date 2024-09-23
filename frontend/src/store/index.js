@@ -38,7 +38,7 @@ export const useStore = defineStore('store', () => {
 
     const { token } = await response.json();
     localStorage.setItem("token", `Bearer ${token}`);
-    router.push("/posts");
+    router.push("/");
   };
 
   const registerUser = async (email, name, password) => {
@@ -87,7 +87,6 @@ export const useStore = defineStore('store', () => {
     }
   };
 
-
   const createPost = async (formData) => {
     try {
       const token = checkToken();
@@ -110,6 +109,7 @@ export const useStore = defineStore('store', () => {
       post.user_vote = null
 
       posts.value.unshift(post)
+      return post
     } catch (err) {
       err.value = err.message;
     }
@@ -267,7 +267,6 @@ export const useStore = defineStore('store', () => {
 
   };
 
-
   const addVote = async (entity_id, entity_type, vote_type) => {
     try {
       const token = checkToken();
@@ -325,7 +324,6 @@ export const useStore = defineStore('store', () => {
     }
 
   };
-
 
   const addVoteToPost = async (is_like, target_id, entity_type) => {
     const newVote = is_like ? 1 : 0;

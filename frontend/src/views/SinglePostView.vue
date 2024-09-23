@@ -65,23 +65,66 @@ const addVoteToComment = async ({
     console.error("Error processing vote:", error);
   }
 };
+
+const clearInput = () => {
+  newComment.value = "";
+};
 </script>
 
 <template>
   <div v-if="post !== null" class="post">
-    <h1 class="post-title">{{ post.title }}</h1>
-    <p class="post-description">{{ post.content }}</p>
-    <div class="post-meta">
-      <p>
-        Author: <span class="user-comment">{{ post.u_name }}</span> (<span
-          class="user-email"
-          >{{ post.u_email }}</span
-        >)
-      </p>
-      <p>
-        Created at: <span class="post-date">{{ post.created_at }}</span>
-      </p>
+    <div>
+      <h1 class="post-title">{{ post.title }}</h1>
+      <div class="img-wrapper">
+        <img
+          v-if="post.img"
+          class="post-img"
+          :src="`http://localhost:3000/${post.img}`"
+          :alt="post.title"
+        />
+        <div class="post-info">
+          <span v-if="post.created_at !== undefined" class="post-info-date">{{
+            post.created_at.slice(0, 10)
+          }}</span>
+          <span class="post-info-author">Author: {{ post.u_name }}</span>
+        </div>
+      </div>
+      <p class="description">{{ post.content }}</p>
     </div>
+    <form class="form-comment" @submit.prevent="submitComment">
+      <router-link to="/my-profile">
+        <img
+          class="user-img"
+          src="../assets/default-user-img.jpg"
+          :alt="post.u_name"
+        />
+      </router-link>
+
+      <div class="form-body">
+        <div class="input-wrapper">
+          <div v-if="respondCommentId !== null" class="response-info">
+            <button
+              type="button"
+              class="btn-clear"
+              @click="removeRespondCommentId"
+            >
+              X
+            </button>
+            {{ respondCommentId }}
+          </div>
+          <input
+            v-model="newComment"
+            type="text"
+            placeholder="Your comment"
+            class="comment-input"
+          />
+        </div>
+        <div class="btns-wrapper">
+          <button @click="clearInput" type="button" class="btn">Cancel</button>
+          <button type="submit" class="btn">Send</button>
+        </div>
+      </div>
+    </form>
     <ul :key="commentsKey" class="post-comments">
       <Comment
         v-for="comment in comments"
@@ -91,21 +134,6 @@ const addVoteToComment = async ({
         @add-vote-to-comment="addVoteToComment"
       />
     </ul>
-    <form class="form-comment" @submit.prevent="submitComment">
-      <div v-if="respondCommentId !== null" class="response-info">
-        <button type="button" class="btn-clear" @click="removeRespondCommentId">
-          X
-        </button>
-        Responding to comment ID: {{ respondCommentId }}
-      </div>
-      <input
-        v-model="newComment"
-        type="text"
-        placeholder="Your comment"
-        class="comment-input"
-      />
-      <button type="submit" class="btn-submit">Send</button>
-    </form>
   </div>
 </template>
 
@@ -114,20 +142,27 @@ const addVoteToComment = async ({
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 20px;
+  padding: 10px;
   margin-bottom: 20px;
+}
+.img-wrapper {
+  position: relative;
+  min-height: 40px;
+}
+.post-comments {
+  max-width: 800px;
 }
 
 .post-title {
-  font-size: 24px;
+  font-size: 3em;
   font-weight: bold;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--c-4);
 }
 
 .post-description {
-  font-size: 16px;
-  color: #555;
+  font-size: 1em;
+  color: var(--gray);
   margin-bottom: 20px;
   line-height: 1.5;
 }
@@ -137,62 +172,87 @@ const addVoteToComment = async ({
   font-size: 14px;
   color: #777;
 }
-
-.user-comment {
-  font-weight: bold;
-  color: #007bff;
+.post-img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
 }
-
-.user-email {
-  color: #555;
+.post-info {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  padding: 10px 5px;
 }
-
-.post-date {
-  color: #999;
-  font-style: italic;
+.post-info-author {
+  background: var(--white);
+  padding: 5px;
+  border-radius: 4px;
 }
-
+.post-info-date {
+  background: var(--white);
+  padding: 5px;
+  border-radius: 4px;
+}
 .form-comment {
+  display: flex;
+  gap: 10px;
+  max-width: 800px;
+  padding-block: 10px;
+}
+.user-img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+.input-wrapper {
+  display: flex;
+  align-items: center;
+}
+.form-body {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-top: 10px;
 }
-
-.response-info {
+.btns-wrapper {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  color: #666;
+  justify-content: end;
+  gap: 20px;
 }
-
-.btn-clear {
-  background: transparent;
-  border: none;
-  color: #ff0000;
-  font-size: 14px;
-  cursor: pointer;
-}
-
 .comment-input {
+  flex-grow: 1;
   padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  width: 100%;
+  border-radius: 5px;
+  border: none;
+  border-bottom: 1px solid var(--c-4);
+}
+.comment-input:focus {
+  outline: 1px solid var(--c-4);
 }
 
-.btn-submit {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 10px;
-  cursor: pointer;
+.btn {
+  padding: 5px 10px;
+  font-size: 1em;
+  border-radius: 10px;
+  transform: all 0.4s ease;
 }
-.post-comments {
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  padding: 5px;
+
+.btn[type="submit"] {
+  background: var(--c-4);
+}
+
+.btn[type="button"] {
+  background: var(--gray);
+}
+
+.btn:hover {
+  outline: 1px solid var(--orange);
+}
+.description {
+  margin-block: 20px;
 }
 </style>

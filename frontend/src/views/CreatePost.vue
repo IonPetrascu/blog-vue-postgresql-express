@@ -3,36 +3,44 @@ import { onMounted, ref } from "vue";
 import { useStore } from "../store";
 
 const showFormPost = ref(true);
-const title = ref("Title of post");
-const description = ref("description");
+const title = ref("");
+const description = ref("");
 const previewImage = ref(null);
-
 const store = useStore();
+const inputImg = ref(null);
 
 onMounted(() => store.getPosts());
 
-const handleSubmit = async (event) => {
-  /*   console.log(event.target[1].files[0]);
-
-  const file = event.target[1].files[0];
+const handleSubmit = async () => {
+  const file = inputImg.value?.files[0];
   const formData = new FormData();
-  formData.append("file", file);
-
-  store.createPost(title.value, description.value); */
-
-  const file = event.target[1].files[0];
-  const formData = new FormData();
+  if (!title.value || !description.value) {
+    return;
+  }
   formData.append("title", title.value);
   formData.append("description", description.value);
-  formData.append("img", file);
 
-  console.log(formData);
+  if (file) {
+    formData.append("img", file);
+  }
 
   try {
-    await store.createPost(formData);
+    const post = await store.createPost(formData);
+    if (post) clearForm();
   } catch (error) {
     console.error("Error submitting the form:", error);
   }
+};
+
+const clearImage = () => {
+  inputImg.value.value = "";
+  previewImage.value = null;
+};
+
+const clearForm = () => {
+  clearImage();
+  title.value = "";
+  description.value = "";
 };
 
 const handleImageChange = (event) => {
@@ -44,13 +52,20 @@ const handleImageChange = (event) => {
 </script>
 <template>
   <div class="wrapper">
-    <form
-      class="form"
-      @submit.prevent="(event) => handleSubmit(event)"
-      v-if="showFormPost"
-    >
+    <form class="form" @submit.prevent="handleSubmit" v-if="showFormPost">
       <input v-model="title" type="text" placeholder="Title of post" required />
-      <label for="input-file">Add image of post</label>
+      <div class="wrapper-img">
+        <label v-if="!previewImage" class="label-file" for="input-file"
+          >Add image of post</label
+        >
+        <label v-else class="label-file" for="input-file"
+          >Change image of post</label
+        >
+        <button v-if="previewImage" type="button" @click="clearImage">
+          Clear img
+        </button>
+      </div>
+
       <img
         class="img-preview"
         :class="{ active: previewImage !== null }"
@@ -59,6 +74,7 @@ const handleImageChange = (event) => {
         alt=""
       />
       <input
+        ref="inputImg"
         id="input-file"
         type="file"
         accept="image/jpeg, image/png ,image/jpg"
@@ -70,7 +86,7 @@ const handleImageChange = (event) => {
         placeholder="Enter description"
       ></textarea>
       <div class="buttons">
-        <button type="button">Cancel</button>
+        <button @click="clearForm" type="button">Cancel</button>
         <button type="submit">Add post</button>
       </div>
     </form>
@@ -81,21 +97,20 @@ const handleImageChange = (event) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-width: 700px;
-  margin: 0 auto;
+  padding-inline: 10px;
 }
 input,
 textarea {
   padding: 10px;
   border-radius: 10px;
-  border: none;
+  border: 1px solid var(--c-1);
   background: var(--white);
   font-size: 1.2em;
 }
 input:focus,
 textarea:focus {
   outline: none;
-  background: #c5c5c5;
+  background: var(--c-3);
 }
 
 textarea {
@@ -108,16 +123,16 @@ textarea {
   justify-content: space-evenly;
 }
 button {
-  padding: 10px;
+  padding: 15px 10px;
   border-radius: 10px;
-  font-size: 1.2em;
+  font-size: 1em;
 }
 button[type="submit"] {
-  background: rgb(97, 253, 97);
+  background: var(--c-4);
 }
 
 button[type="button"] {
-  background: rgb(245, 61, 61);
+  background: var(--gray);
 }
 .img-preview {
   object-fit: cover;
@@ -135,5 +150,16 @@ button[type="button"] {
 }
 input[type="file"] {
   display: none;
+}
+.wrapper-img {
+  display: flex;
+  gap: 10px;
+}
+.label-file {
+  background: var(--c-2);
+  padding: 10px;
+  cursor: pointer;
+  width: max-content;
+  border-radius: 10px;
 }
 </style>
