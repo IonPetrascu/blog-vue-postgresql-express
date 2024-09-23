@@ -139,6 +139,31 @@ export const useStore = defineStore('store', () => {
 
   };
 
+  const deletePost = async (post_id) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/posts/${post_id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed delete post");
+      }
+      const data = await response.json()
+      posts.value = posts.value.filter((post) => post.id !== post_id)
+      return data
+
+    } catch (err) {
+      console.error(err);
+      return err;
+    }
+
+  };
+
   const getMyChats = async () => {
     try {
       const token = checkToken();
@@ -377,6 +402,7 @@ export const useStore = defineStore('store', () => {
     createPost,
     getPosts,
     getSinglePost,
+    deletePost,
     getUserInfo,
     checkToken,
     getComments,

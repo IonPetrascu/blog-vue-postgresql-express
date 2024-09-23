@@ -348,6 +348,26 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
   client.end;
 })
 
+app.delete('/posts/:id', verifyToken, async (req, res) => {
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+  const postId = req.params.id;
+  const userId = req.user.id
+  const insertQuery = `DELETE FROM posts WHERE id = $1 AND user_id = $2 RETURNING *`
+
+  try {
+    const result = await client.query(insertQuery, [postId, userId]);
+    res.status(200).json(result.rows[0]);
+
+  } catch (error) {
+    console.error('Error on get post:', error);
+    res.status(500).send('Error on get post');
+  }
+
+  client.end;
+})
+
 app.get('/comments/:id', verifyToken, async (req, res) => {
   const postId = req.params.id
   const userId = req.user.id;
@@ -510,7 +530,6 @@ WHERE cu1.user_id = $1
     res.status(500).send('Error on get chats');
   }
 })
-
 
 app.post('/chats', verifyToken, async (req, res) => {
   console.log(req.body);

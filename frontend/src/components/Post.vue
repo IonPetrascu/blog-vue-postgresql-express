@@ -12,10 +12,20 @@ const datePost = computed(() => transformToLocalTime(props.post.created_at));
 const handleVote = (vote) => {
   store.addVoteToPost(vote, props.post.id, "post");
 };
+
+const deletePost = () => {
+
+  store.deletePost(props.post.id);
+
+};
 </script>
 <template>
   <div class="post">
-    <button v-if="post.user_id === store.userInfo.id" class="delete-post-btn">
+    <button
+      @click="deletePost"
+      v-if="post.user_id === store.userInfo.id"
+      class="delete-post-btn"
+    >
       <img src="../assets/close-icon.svg" alt="delete post" />
     </button>
     <div class="post-img-wrapper">
