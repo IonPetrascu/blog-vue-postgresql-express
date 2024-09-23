@@ -18,24 +18,25 @@ const handleVote = (vote) => {
     <button v-if="post.user_id === store.userInfo.id" class="delete-post-btn">
       <img src="../assets/close-icon.svg" alt="delete post" />
     </button>
-    <img
-      v-if="post.img"
-      class="post-img"
-      :src="`http://localhost:3000/${post.img}`"
-      alt=""
-    />
-    <img
-      class="post-img"
-      v-else
-      src="../assets/default-post-image.png"
-      alt=""
-    />
+    <div class="post-img-wrapper">
+      <img
+        v-if="post.img"
+        class="post-img"
+        :src="`http://localhost:3000/${post.img}`"
+        alt=""
+      />
+      <img
+        class="post-img"
+        v-else
+        src="../assets/default-post-image.png"
+        alt=""
+      />
+    </div>
+
     <div class="post-content">
       <span class="post-theme">Technology</span>
-      <router-link :to="`/post/${post.id}`">
-        <h2 class="post-title">
-          {{ post.title }}
-        </h2>
+      <router-link class="post-title" :to="`/post/${post.id}`">
+        {{ post.title }}
       </router-link>
 
       <div class="post-bottom">
@@ -45,7 +46,9 @@ const handleVote = (vote) => {
             src="../assets/default-user-img.jpg"
             :alt="post.user_name"
           />
-          <h3 class="post-name">{{ post.user_name }}</h3>
+          <router-link :to="`/profile/${post.user_id}`" class="post-name">{{
+            post.user_name
+          }}</router-link>
 
           <time class="post-date"> {{ datePost }}</time>
         </div>
@@ -90,9 +93,9 @@ const handleVote = (vote) => {
 </template>
 <style scoped>
 .post {
-  padding: 15px;
+  padding: 5px;
   background: var(--white);
-  border: 1px solid #e8e8ea;
+  border: 2px solid var(--c-3);
   border-radius: 12px;
   position: relative;
   max-height: 495px;
@@ -102,12 +105,15 @@ const handleVote = (vote) => {
   font-weight: 600;
   font-size: 24px;
   line-height: 117%;
-  color: #181a2a;
+  color: var(--black);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.post-title:hover {
+  color: var(--rose);
 }
 .post-name,
 .post-date {
@@ -124,8 +130,18 @@ const handleVote = (vote) => {
 }
 .post-img {
   width: 100%;
-  height: 240px;
+  height: 100%;
   object-fit: cover;
+
+  transition: scale 0.4s ease;
+}
+.post-img:hover {
+  scale: 1.1;
+}
+.post-img-wrapper {
+  overflow: hidden;
+  border-radius: 12px;
+  height: 240px;
 }
 .post-theme {
   border-radius: 6px;
@@ -192,11 +208,13 @@ const handleVote = (vote) => {
   width: 30px;
   height: 30px;
   position: absolute;
-  right: 20px;
-  top: 20px;
+  right: 5px;
+  top: 5px;
+  border: 2px solid var(--c-4);
   border-radius: 50%;
   overflow: hidden;
   transition: scale 0.4s ease;
+  z-index: 1;
 }
 .delete-post-btn img {
   width: 100%;

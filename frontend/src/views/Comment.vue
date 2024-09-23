@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, onMounted, ref } from "vue";
+import { defineProps, defineEmits, ref } from "vue";
 import Comment from "./Comment.vue";
 import { useStore } from "../store";
 
@@ -67,27 +67,44 @@ const handleVote = async (is_like) => {
 <template>
   <div class="wrapper-comment">
     <div class="comment">
-      <div class="body-comment">
-        <div>{{ localComment.u_name }} -- {{ localComment.user_id }}</div>
-        <p>{{ localComment.content }}</p>
-        <span>{{ localComment.created_at }}</span>
+      <div class="header-comment">
+        <div class="comment-author-info">
+          <img
+            class="comment-img"
+            src="../assets/default-user-img.jpg"
+            alt=""
+          />
+          <router-link :to="`/profile/${localComment.user_id}`">{{
+            localComment.u_name
+          }}</router-link>
+          <span class="date">{{ localComment.created_at.slice(0, 10) }}</span>
+        </div>
+
+        <div class="body-comment">
+          <span class="respond-to-person">{{
+            localComment.parent_comment_id
+          }}</span>
+          <p class="comment-text">{{ localComment.content }}</p>
+        </div>
       </div>
-      <div>
-        <button class="respond-btn" @click="handleRespond">Respond</button>
+      <div class="foter-comment">
         <button
           class="btn-vote"
           :class="{ active: localComment.user_vote }"
           @click="() => handleVote(true)"
         >
-          Like {{ localComment.like_count }}
+          <img class="like-img" src="../assets/like.svg" alt="like" />
+          <span> {{ localComment.like_count }}</span>
         </button>
         <button
           class="btn-vote"
           :class="{ active: localComment.user_vote === false }"
           @click="() => handleVote(false)"
         >
-          Dislike {{ localComment.dislike_count }}
+          <img class="dislike-img" src="../assets/like.svg" alt="dislike" />
+          <span>{{ localComment.dislike_count }}</span>
         </button>
+        <button class="respond-btn" @click="handleRespond">Respond</button>
       </div>
     </div>
     <div class="replie" v-if="localComment.replies.length > 0">
@@ -107,28 +124,67 @@ const handleVote = async (is_like) => {
   border-radius: 8px;
 }
 
-.replie {
-  margin-left: 15px;
-}
 .comment {
-  background: rgb(241, 241, 241);
+  border: 1px solid var(--black);
   padding: 5px;
   margin-bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 10px;
+}
+.comment-author-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.comment-img {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+}
+.header-comment {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  gap: 4px;
+  word-wrap: break-word;
 }
 .body-comment {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+  margin-top: 10px;
 }
-.respond-btn {
-  border: 1px solid gray;
-  padding: 4px;
-  border-radius: 4px;
+.foter-comment {
+  display: flex;
+  gap: 10px;
+}
+.respond-btn :hover {
+  color: var(--orange);
 }
 .btn-vote {
   background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.btn-vote span {
+  font-size: 14px;
 }
 .btn-vote.active {
-  color: blue;
+  color: var(--orange);
+}
+.respond-to-person {
+  color: var(--orange);
+}
+.like-img,
+.dislike-img {
+  width: 15px;
+}
+.dislike-img {
+  transform: rotate(180deg);
+}
+.date {
+  margin-left: auto;
 }
 </style>

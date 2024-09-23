@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser')
-
+const ws = require('ws');
 const cors = require('cors')
 const bcrypt = require('bcryptjs')
 const client = require('./connection')
@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken')
 const fileUpload = require('express-fileupload')
 const { v4: uuidv4 } = require('uuid');
 const path = require('path')
+const http = require('http');
 
 client.connect();
 const app = express();
@@ -18,13 +19,128 @@ app.use(fileUpload({}))
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.resolve(__dirname, './static')));
 
-
+const server = http.createServer(app);
+const wss = new ws.Server({ server });
 
 const port = process.env.PORT || 3000
 
-app.listen(port, () => {
-  console.log(`Sever is now listening at port ${port}`);
+
+server.listen(port, () => {
+  console.log(`Сервер запущен на порту ${port}`);
+});
+
+wss.on('connection', function connection(ws) {
+  ws.on('message', async function (message) {
+    message = JSON.parse(message)
+    switch (message.event) {
+      case 'message':
+        if (message.chat_id && message.user_id && message.message) {
+          try {
+
+            const hasAccess = await checkUserChatAccess(message.chat_id, message.user_id);
+            if (!hasAccess) {
+              ws.send(JSON.stringify({
+                event: 'error',
+                message: 'You do not have access to this chat'
+              }));
+              return;
+            }
+
+            message.sent_at = new Date().toISOString();
+            const savedMessage = await saveMessageToDatabase(message);
+
+            broadcastMessage(savedMessage);
+          } catch (err) {
+            console.error('Error processing message:', err);
+          }
+        } else {
+          console.error('Invalid message format:', message);
+        }
+        break;
+      case 'connection':
+
+        ws.acces = await checkUserChatAccess(Number(message.id), message.user_id);
+        ws.chat_id = Number(message.id);
+        broadcastMessage(message)
+        break;
+      case 'history':
+        try {
+
+          const hasAccess = await checkUserChatAccess(Number(message.chat_id), message.user_id);
+          if (!hasAccess) {
+            ws.send(JSON.stringify({
+              event: 'error',
+              message: 'You do not have access to this chat'
+            }));
+            return;
+          }
+
+          const history = await getChatHistory(message.chat_id);
+          ws.send(JSON.stringify({
+            event: 'history',
+            chat_id: message.chat_id,
+            messages: history,
+            sent_at: message.sent_at
+          }));
+        } catch (err) {
+          console.error('Error fetching chat history:', err);
+        }
+        break;
+    }
+  })
 })
+
+function broadcastMessage(message) {
+  wss.clients.forEach(client => {
+    if (client.acces && message.chat_id && client.chat_id === message.chat_id) {
+      client.send(JSON.stringify(message));
+    }
+  });
+}
+
+async function checkUserChatAccess(chat_id, user_id) {
+  try {
+    const query = `
+      SELECT * FROM chat_users
+      WHERE chat_id = $1 AND user_id = $2
+    `;
+    const result = await client.query(query, [chat_id, user_id]);
+    return result.rows.length > 0;
+  } catch (err) {
+    console.error('Error checking user chat access:', err);
+    throw err;
+  }
+}
+
+async function saveMessageToDatabase(value) {
+  try {
+    const query = `
+      INSERT INTO messages (chat_id, user_id, content, sent_at)
+      VALUES ($1, $2, $3,$4) RETURNING *
+    `;
+    const data = await client.query(query, [value.chat_id, value.user_id, value.message, value.sent_at])
+    data.rows[0].event = 'message'
+    return data.rows[0]
+  } catch (err) {
+    console.error('Error saving message to database:', err);
+  }
+}
+
+async function getChatHistory(chatId) {
+  try {
+    const query = `
+      SELECT user_id, content, sent_at
+      FROM messages
+      WHERE chat_id = $1
+      ORDER BY sent_at ASC
+    `;
+    const result = await client.query(query, [chatId]);
+    return result.rows;
+  } catch (err) {
+    console.error('Error fetching chat history:', err);
+    throw err;
+  }
+}
 
 app.post('/register', async (req, res) => {
   try {
@@ -234,7 +350,7 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
 
 app.get('/comments/:id', verifyToken, async (req, res) => {
   const postId = req.params.id
-  const userId = req.user.id; // ID текущего пользователя
+  const userId = req.user.id;
 
   const insertQuery = `
     WITH comment_likes AS (
@@ -354,5 +470,82 @@ app.delete('/votes', verifyToken, async (req, res) => {
   } catch (err) {
     console.error('Error on delete vote:', err);
     res.status(500).send('Error on delete vote');
+  }
+});
+
+app.get('/chats', verifyToken, async (req, res) => {
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+  const user_id = req.user.id;
+
+  try {
+    const query = `SELECT
+  chats.id AS chat_id,
+  chats.name,
+  "usersReg".id AS user_id,
+  "usersReg".u_name AS user_name,
+  last_message.id AS message_id,
+  last_message.content AS last_message_content,
+  last_message.sent_at AS last_message_sent_at
+FROM chats
+JOIN chat_users AS cu1 ON chats.id = cu1.chat_id
+JOIN chat_users AS cu2 ON chats.id = cu2.chat_id
+JOIN "usersReg" ON "usersReg".id = cu2.user_id
+LEFT JOIN LATERAL (
+  SELECT m.id, m.content, m.sent_at
+  FROM messages m
+  WHERE m.chat_id = chats.id
+  ORDER BY m.sent_at DESC
+  LIMIT 1
+) last_message ON true
+WHERE cu1.user_id = $1
+  AND cu2.user_id != $1;`
+
+    const result = await client.query(query, [user_id]);
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error on get chats:', err);
+    res.status(500).send('Error on get chats');
+  }
+})
+
+
+app.post('/chats', verifyToken, async (req, res) => {
+  console.log(req.body);
+
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+  const user_id = req.user.id;
+  const { other_user_id, chat_name } = req.body;
+
+  if (!other_user_id || !chat_name) {
+    return res.status(400).send('Both other_user_id and chat_name are required');
+  }
+
+  try {
+    // Вставка нового чата
+    const chatResult = await client.query(
+      'INSERT INTO chats (name, is_private) VALUES ($1, $2) RETURNING *',
+      [chat_name, true]
+    );
+    const chatId = chatResult.rows[0].id;
+
+    await client.query(
+      'INSERT INTO chat_users (chat_id, user_id) VALUES ($1, $2)',
+      [chatId, user_id]
+    );
+
+    await client.query(
+      'INSERT INTO chat_users (chat_id, user_id) VALUES ($1, $2)',
+      [chatId, other_user_id]
+    );
+
+    res.status(200).json(chatResult.rows[0]);
+  } catch (err) {
+    console.error('Error creating chat:', err);
+    res.status(500).send('Error creating chat');
   }
 });

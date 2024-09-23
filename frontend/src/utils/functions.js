@@ -8,6 +8,6 @@ export const transformToLocalTime = (isoString) => {
   const hour = date.getUTCHours()
   const minute = date.getUTCMinutes()
 
-  return `${month} ${day}, ${hour}:${minute}, ${year}`
+  return `${month} ${day}, ${hour}:${minute}`
 
 }

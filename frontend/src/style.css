@@ -23,7 +23,13 @@ body {
   --rose: #eb3678;
   --orange: #fb773c;
   --white: #ffffff;
-  --black: #000000;
+  --black: #0c0c0c;
+  --gray: #d3d1d1;
+
+  --c-1: #e5d9f2;
+  --c-2: #f5efff;
+  --c-3: #cdc1ff;
+  --c-4: #a594f9;
 }
 #app {
   min-height: 100vh;

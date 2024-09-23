@@ -4,7 +4,6 @@ import { useStore } from "../store";
 
 const email = ref("");
 const password = ref("");
-
 const store = useStore();
 
 const handleSubmit = () => store.loginUser(email.value, password.value);

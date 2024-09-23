@@ -1,31 +1,24 @@
 <script setup>
-import Post from "../components/Post.vue";
+import Post from "./Post.vue";
 import { useStore } from "../store";
 
 const store = useStore();
-
-
 </script>
 <template>
-  <div class="wrapper">
-    <h2 class="title">Latest posts</h2>
-    <div class="posts">
-      <Post :post="post" v-for="post in store.posts" :key="post.id" />
-    </div>
+  <div class="posts">
+    <Post :post="post" v-for="post in store.posts" :key="post.id" />
   </div>
 </template>
 <style scoped>
-.wrapper {
-  padding-inline: 10px;
-}
 .posts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
+  padding-inline: 10px;
   margin-top: 20px;
 }
 .title {
-  color: var(--white);
+  color: var(--black);
 }
 
 @media (max-width: 1040px) {
