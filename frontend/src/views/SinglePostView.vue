@@ -40,9 +40,8 @@ const submitComment = async () => {
   comments.value = await store.getComments(id);
 };
 
-const setRespondCommentId = (id) => {
-  respondCommentId.value = id;
-};
+const setRespondCommentId = (id) => (respondCommentId.value = id);
+
 const removeRespondCommentId = () => (respondCommentId.value = null);
 
 const addVoteToComment = async ({
@@ -66,9 +65,7 @@ const addVoteToComment = async ({
   }
 };
 
-const clearInput = () => {
-  newComment.value = "";
-};
+const clearInput = () => (newComment.value = "");
 </script>
 
 <template>

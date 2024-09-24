@@ -7,6 +7,7 @@ export const useStore = defineStore('store', () => {
   const posts = ref(null)
   const router = useRouter();
   const userInfo = ref(null)
+  const profile = ref(null)
 
   const checkToken = () => {
     const token = localStorage.getItem('token')
@@ -61,25 +62,48 @@ export const useStore = defineStore('store', () => {
     router.push("/login");
   };
 
-  const getUserInfo = async () => {
+  const getMyInfo = async () => {
     try {
       const token = checkToken();
 
-      const response = await fetch("http://localhost:3000/userinfo", {
+      const response = await fetch(`http://localhost:3000/userinfo`, {
         method: "GET",
         headers: {
-          Authorization: token,
-          "Content-Type": "application/json",
-        },
+          Authorization: token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch your info");
+      }
+
+      const { user } = await response.json();
+      userInfo.value = user
+
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+  };
+
+  const getUserInfo = async (id) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/profile/${id}`, {
+        method: "GET",
+        headers: {
+          Authorization: token
+        }
       });
 
       if (!response.ok) {
         throw new Error("Failed to fetch user info");
       }
 
-      const { user } = await response.json();
-      const { u_password, ...data } = await user
-      userInfo.value = data
+      const data = await response.json();
+      profile.value = data
+      posts.value = [...data.posts]
 
     } catch (err) {
       console.error(err.message);
@@ -155,6 +179,7 @@ export const useStore = defineStore('store', () => {
       }
       const data = await response.json()
       posts.value = posts.value.filter((post) => post.id !== post_id)
+      profile.value.posts = profile.value.posts.filter((post) => post.id !== post_id)
       return data
 
     } catch (err) {
@@ -392,11 +417,59 @@ export const useStore = defineStore('store', () => {
     }
   };
 
+  const subscribeToUser = async (subscribed_to_id) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/subscriptions/${subscribed_to_id}`, {
+        method: "POST",
+        headers: {
+          Authorization: token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to subscribe on user");
+      }
+
+      const data = await response.json()
+      profile.value.subscribers.push(data)
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+
+  };
+
+  const deleteSubscription = async (subscribed_to_id) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch(`http://localhost:3000/subscriptions/${subscribed_to_id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: token
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to subscribe on user");
+      }
+
+      const data = await response.json()
+      profile.value.subscribers = profile.value.subscribers.filter((sub) => sub.subscriber_id !== data.subscriber_id)
+    } catch (err) {
+      console.error(err.message);
+      return { error: err.message };
+    }
+
+  };
 
   return {
     isAuth,
     posts,
     userInfo,
+    profile,
     loginUser,
     registerUser,
     createPost,
@@ -411,6 +484,9 @@ export const useStore = defineStore('store', () => {
     addVoteToPost,
     deleteVote,
     getMyChats,
-    createChat
+    createChat,
+    subscribeToUser,
+    deleteSubscription,
+    getMyInfo
   }
 })

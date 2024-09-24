@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useStore } from "../store";
 import { transformToLocalTime } from "../utils/functions";
+
 const props = defineProps({
   post: Object,
 });
@@ -9,21 +10,14 @@ const props = defineProps({
 const store = useStore();
 const datePost = computed(() => transformToLocalTime(props.post.created_at));
 
-const handleVote = (vote) => {
-  store.addVoteToPost(vote, props.post.id, "post");
-};
-
-const deletePost = () => {
-
-  store.deletePost(props.post.id);
-
-};
+const handleVote = (vote) => store.addVoteToPost(vote, props.post.id, "post");
+const deletePost = () => store.deletePost(props.post.id);
 </script>
 <template>
   <div class="post">
     <button
       @click="deletePost"
-      v-if="post.user_id === store.userInfo.id"
+      v-if="post.user_id === store.userInfo?.id"
       class="delete-post-btn"
     >
       <img src="../assets/close-icon.svg" alt="delete post" />
@@ -75,13 +69,19 @@ const deletePost = () => {
             </button>
             <button @click="handleVote(false)" class="dislike-btn">
               <span>{{ post.dislikes_count }}</span>
+
               <img
                 v-if="post.user_vote === null || post.user_vote === 1"
                 class="dislike-img"
                 src="../assets/like.svg"
                 alt=""
               />
-              <img v-else src="../assets/like-active.svg" alt="" />
+              <img
+                class="dislike-img"
+                v-else
+                src="../assets/like-active.svg"
+                alt=""
+              />
             </button>
           </div>
           <div>

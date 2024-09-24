@@ -5,9 +5,7 @@ import TheHeader from "./components/TheHeader.vue";
 const store = useStore();
 
 onBeforeMount(async () => {
-  await store.checkToken();
-  await store.getUserInfo();
-  await store.getPosts();
+  await Promise.all([store.checkToken(), store.getMyInfo()]);
 });
 </script>
 

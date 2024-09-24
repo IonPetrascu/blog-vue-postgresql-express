@@ -223,7 +223,8 @@ async function verifyToken(req, res, next) {
 }
 
 app.get('/userinfo', verifyToken, (req, res) => {
-  res.json({ user: req.user });
+  const { u_password, ...data } = req.user
+  res.json({ user: data });
 });
 
 app.post('/posts', verifyToken, async (req, res) => {
@@ -568,3 +569,169 @@ app.post('/chats', verifyToken, async (req, res) => {
     res.status(500).send('Error creating chat');
   }
 });
+
+app.post('/subscriptions/:id', verifyToken, async (req, res) => {
+
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+
+  const subscriber_id = req.user.id;
+  const subscribed_to_id = Number(req.params.id, 10)
+
+  if (subscriber_id === subscribed_to_id) {
+    return res.status(400).json({ message: "You cannot subscribe to yourself." });
+  }
+
+  console.log(subscribed_to_id, subscriber_id);
+
+  try {
+    await client.query(
+      'INSERT INTO subscriptions (subscriber_id, subscribed_to_id) VALUES($1, $2) RETURNING *',
+      [subscriber_id, subscribed_to_id]
+    );
+
+    const userResult = await client.query(
+      'SELECT u.id AS subscriber_id, u.u_name, u.u_email FROM "usersReg" u WHERE u.id = $1',
+      [subscriber_id]
+    );
+
+    res.status(200).json(userResult.rows[0]);
+  } catch (err) {
+    console.error('Error subscription:', err);
+    res.status(500).json({ message: "Error subscription" });
+  }
+});
+
+
+app.delete('/subscriptions/:id', verifyToken, async (req, res) => {
+
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+
+  const subscriber_id = req.user.id;
+  const subscribed_to_id = Number(req.params.id, 10)
+
+  if (subscriber_id === subscribed_to_id) {
+    return res.status(400).json({ message: "You cannot delete subscribtion to yourself." });
+  }
+
+  console.log(subscribed_to_id, subscriber_id);
+
+  try {
+    const result = await client.query(
+      'DELETE FROM subscriptions WHERE subscriber_id = $1 AND subscribed_to_id = $2 RETURNING * ',
+      [subscriber_id, subscribed_to_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Subscription not found." });
+    }
+
+    const userResult = await client.query(
+      'SELECT u.id AS subscriber_id, u.u_name, u.u_email FROM "usersReg" u WHERE u.id = $1',
+      [subscriber_id]
+    );
+
+    res.status(200).json(userResult.rows[0]);
+  } catch (err) {
+    console.error('Error on delete subscription:', err);
+    res.status(500).json({ message: "Error on delete subscription" });
+  }
+});
+
+app.get('/profile/:id', verifyToken, async (req, res) => {
+
+  if (!req.user) {
+    return res.status(401).send('Token not found');
+  }
+  const userId = req.params.id
+
+  try {
+    const queryUserInfo = `SELECT id AS user_id, u_name, u_email
+    FROM "usersReg"
+    WHERE id = $1;`;
+    const userInfoResult = await client.query(queryUserInfo, [userId]);
+
+    if (userInfoResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const queryPostsOfUser = `
+WITH like_dislike_counts AS (
+  SELECT
+    v.entity_id AS post_id,
+    COUNT(CASE WHEN v.vote_type = TRUE THEN 1 END)::INTEGER AS likes_count,
+    COUNT(CASE WHEN v.vote_type = FALSE THEN 1 END)::INTEGER AS dislikes_count
+  FROM votes v
+  WHERE v.entity_type = 'post'
+  GROUP BY v.entity_id
+),
+user_votes AS (
+  SELECT
+    v.entity_id AS post_id,
+    MAX(CASE
+          WHEN v.user_id = $2 THEN
+            CASE WHEN v.vote_type = TRUE THEN 1 ELSE 0 END
+          ELSE NULL END) AS user_vote
+  FROM votes v
+  WHERE v.entity_type = 'post' AND v.user_id = $2
+  GROUP BY v.entity_id
+)
+SELECT
+  p.id AS id,
+  p.user_id,
+  p.title,
+  p.content,
+  p.created_at,
+  p.updated_at,
+  p.img,
+  COALESCE(lc.likes_count, 0) AS likes_count,
+  COALESCE(lc.dislikes_count, 0) AS dislikes_count,
+  uv.user_vote,
+  COUNT(c.id)::INTEGER AS comments_count,
+  ur.u_name AS user_name,
+  ur.u_email AS user_email
+FROM posts p
+LEFT JOIN like_dislike_counts lc ON p.id = lc.post_id
+LEFT JOIN user_votes uv ON p.id = uv.post_id
+LEFT JOIN comments c ON p.id = c.post_id
+LEFT JOIN "usersReg" ur ON p.user_id = ur.id
+WHERE p.user_id = $1
+GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote, ur.id, ur.u_name, ur.u_email
+ORDER BY p.created_at DESC;
+`;
+
+    const postsResult = await client.query(queryPostsOfUser, [userId, req.user.id]);
+
+
+    //get subscribers
+    const querySubscribers = `SELECT u.id AS subscriber_id, u.u_name, u.u_email
+      FROM subscriptions s
+      JOIN "usersReg" u ON u.id = s.subscriber_id
+      WHERE s.subscribed_to_id = $1;`;
+    const subscribersResult = await client.query(querySubscribers, [userId]);
+
+    // get subscriptions
+    const querySubscriptions = `SELECT u.id AS subscribed_to_id, u.u_name, u.u_email
+      FROM subscriptions s
+      JOIN "usersReg" u ON u.id = s.subscribed_to_id
+      WHERE s.subscriber_id = $1;`;
+    const subscriptionsResult = await client.query(querySubscriptions, [userId]);
+
+
+    const profileData = {
+      user: userInfoResult.rows[0],
+      posts: postsResult.rows,
+      subscribers: subscribersResult.rows,
+      subscriptions: subscriptionsResult.rows,
+    };
+
+    res.status(200).json(profileData);
+
+  } catch (err) {
+    console.error('Error on get profile', err);
+    res.status(500).json({ message: "Error on get profile" });
+  }
+})
