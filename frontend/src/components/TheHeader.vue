@@ -15,7 +15,9 @@ const store = useStore();
     <nav v-else class="nav">
       <RouterLink class="link" to="/">Posts</RouterLink>
       <RouterLink class="link" to="/add-post">Create post</RouterLink>
-      <RouterLink class="link" to="/my-profile">Profile</RouterLink>
+      <RouterLink class="link" :to="`/profile/${store.userInfo?.id}`"
+        >Profile</RouterLink
+      >
       <RouterLink class="link" to="/chats">Chats</RouterLink>
     </nav>
   </header>

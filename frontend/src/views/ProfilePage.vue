@@ -1,24 +1,69 @@
 <script setup>
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../store";
+import { onMounted, ref, watch, computed } from "vue";
+import PopupSubscribers from "../components/PopupSubscribers.vue";
+import Posts from "../components/Posts.vue";
 
 const store = useStore();
 const route = useRoute();
-
-const userId = route.params.id;
-
 const router = useRouter();
+const showSubscribers = ref(false);
+const popupDataType = ref("");
+const userId = computed(() => route.params.id);
 
-const goToChats = () => {
-  router.push("/chats");
-};
+const isMyProfile = computed(() => {
+  if (store.userInfo) {
+    return store.userInfo.id === Number(route.params.id);
+  }
+  return false;
+});
+
+const popupData = computed(() => {
+  return popupDataType.value === "subscribers"
+    ? store.profile?.subscribers
+    : store.profile?.subscriptions;
+});
+
+const isSubscribed = computed(() => {
+  return (
+    store.profile?.subscribers.findIndex(
+      (sub) => sub.subscriber_id === store.userInfo?.id
+    ) !== -1
+  );
+});
 
 const createChat = async () => {
-  const res = await store.createChat(userId, "New chat");
+  const res = await store.createChat(userId.value, "New chat");
   if (res) {
     goToChats();
   }
 };
+
+const openSubscribersPopup = () => {
+  popupDataType.value = "subscribers";
+  showSubscribers.value = true;
+};
+
+const openSubscriptionsPopup = () => {
+  popupDataType.value = "subscriptions";
+  showSubscribers.value = true;
+};
+
+const goToChats = () => router.push("/chats");
+const following = () => store.subscribeToUser(userId.value);
+const removeFollowing = () => store.deleteSubscription(userId.value);
+const closePopup = () => (showSubscribers.value = false);
+
+onMounted(() => store.getUserInfo(userId.value));
+
+watch(
+  () => route.params.id,
+  (newUserId) => {
+    store.getUserInfo(newUserId);
+    closePopup();
+  }
+);
 </script>
 <template>
   <div class="profile-container">
@@ -28,15 +73,30 @@ const createChat = async () => {
         <button class="profile-avatar">
           <img src="../assets/default-user-img.jpg" alt="Profile Image" />
         </button>
-        <button class="profile-edit-button">Edit</button>
+        <button v-if="isMyProfile" class="profile-edit-button">Edit</button>
       </div>
       <div class="profile-details">
         <div class="profile-info">
-          <h3 class="profile-name">Petrascu Ion</h3>
-          <span class="profile-location">Chisinau, Moldova</span>
+          <h3 class="profile-name">{{ store.profile?.user.u_name }}</h3>
+          <span class="profile-location">{{
+            store.profile?.user.country
+          }}</span>
         </div>
-        <div class="profile-actions">
-          <button class="profile-action-btn following-btn">Following</button>
+        <div v-if="!isMyProfile" class="profile-actions">
+          <button
+            v-if="!isSubscribed"
+            @click="following"
+            class="profile-action-btn following-btn"
+          >
+            Following
+          </button>
+          <button
+            v-else
+            @click="removeFollowing"
+            class="profile-action-btn following-btn"
+          >
+            UnFollowing
+          </button>
           <button class="profile-action-btn message-btn" @click="createChat">
             Message
           </button>
@@ -44,19 +104,36 @@ const createChat = async () => {
       </div>
       <div class="profile-stats">
         <div class="profile-stat-item">
-          <span class="profile-stat-number">6</span>
+          <span class="profile-stat-number">{{
+            store.profile?.posts.length
+          }}</span>
           <span class="profile-stat-label">Posts</span>
         </div>
         <div class="profile-stat-item">
-          <span class="profile-stat-number">53</span>
-          <span class="profile-stat-label">Followers</span>
+          <span class="profile-stat-number">{{
+            store.profile?.subscribers.length
+          }}</span>
+          <button @click="openSubscribersPopup" class="profile-stat-label">
+            Followers
+          </button>
         </div>
         <div class="profile-stat-item">
-          <span class="profile-stat-number">19</span>
-          <span class="profile-stat-label">Following</span>
+          <span class="profile-stat-number">{{
+            store.profile?.subscriptions.length
+          }}</span>
+          <button @click="openSubscriptionsPopup" class="profile-stat-label">
+            Following
+          </button>
         </div>
       </div>
     </div>
+    <Posts :posts="store.profile?.posts" />
+    <PopupSubscribers
+      v-if="showSubscribers"
+      :data="popupData"
+      :type="popupDataType"
+      @close-popup="closePopup"
+    />
   </div>
 </template>
 <style scoped>

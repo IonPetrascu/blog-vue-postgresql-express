@@ -1,12 +1,14 @@
 <script setup>
 import Post from "./Post.vue";
-import { useStore } from "../store";
 
-const store = useStore();
+defineProps({
+  posts: Array,
+});
+
 </script>
 <template>
   <div class="posts">
-    <Post :post="post" v-for="post in store.posts" :key="post.id" />
+    <Post :post="post" v-for="post in posts" :key="post.id" />
   </div>
 </template>
 <style scoped>
