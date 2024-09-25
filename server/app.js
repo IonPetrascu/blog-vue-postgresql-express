@@ -28,7 +28,7 @@ const port = process.env.PORT || 3000
 
 
 server.listen(port, () => {
-  console.log(`Сервер запущен на порту ${port}`);
+  console.log(`Server start on port ${port}`);
 });
 
 wss.on('connection', function connection(ws) {
@@ -191,7 +191,7 @@ app.post('/login', async (req, res) => {
 
     res.json({ token })
   } catch (error) {
-    console.log(error);
+    console.error(error);
     res.status(500).send('Server Error')
   }
 })
@@ -535,7 +535,6 @@ WHERE cu1.user_id = $1
 })
 
 app.post('/chats', verifyToken, async (req, res) => {
-  console.log(req.body);
 
   if (!req.user) {
     return res.status(401).send('Token not found');
@@ -585,7 +584,6 @@ app.post('/subscriptions/:id', verifyToken, async (req, res) => {
     return res.status(400).json({ message: "You cannot subscribe to yourself." });
   }
 
-  console.log(subscribed_to_id, subscriber_id);
 
   try {
     await client.query(
@@ -619,7 +617,6 @@ app.delete('/subscriptions/:id', verifyToken, async (req, res) => {
     return res.status(400).json({ message: "You cannot delete subscribtion to yourself." });
   }
 
-  console.log(subscribed_to_id, subscriber_id);
 
   try {
     const result = await client.query(
