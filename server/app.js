@@ -9,7 +9,9 @@ const fileUpload = require('express-fileupload')
 const { v4: uuidv4 } = require('uuid');
 const path = require('path')
 const http = require('http');
+const { OAuth2Client } = require("google-auth-library");
 
+const clientGoogle = new OAuth2Client(process.env.CLIENT_ID);
 client.connect();
 const app = express();
 
@@ -735,3 +737,40 @@ ORDER BY p.created_at DESC;
     res.status(500).json({ message: "Error on get profile" });
   }
 })
+
+app.post('/api/auth/google', async (req, res) => {
+
+  const { token } = req.body
+  try {
+    const ticket = await clientGoogle.verifyIdToken({
+      idToken: token,
+      audience: process.env.CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    const { email, name } = payload;
+
+    const existingUser = await client.query('SELECT * FROM "usersReg" WHERE u_email = $1', [email]);
+
+    let user;
+
+    if (existingUser.rows.length > 0) {
+      user = existingUser.rows[0];
+    } else {
+      const result = await client.query(
+        'INSERT INTO "usersReg" (u_name, u_email, u_password) VALUES ($1, $2, $3) RETURNING *',
+        [name, email, '']
+      );
+      user = result.rows[0];
+    }
+
+    const usertToken = jwt.sign({ userId: user.id }, process.env.SECRET_KEY, {
+      expiresIn: '30d'
+    });
+
+    res.json({ usertToken });
+  } catch (error) {
+    console.error(error);
+    res.status(401).send('Unauthorized');
+  }
+});
