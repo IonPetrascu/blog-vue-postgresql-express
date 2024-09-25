@@ -1,11 +1,26 @@
 <script setup>
-import { onBeforeMount } from "vue";
+import { onBeforeMount, ref } from "vue";
 import { useStore } from "./store";
 import TheHeader from "./components/TheHeader.vue";
 const store = useStore();
+const isLoading = ref(true);
 
 onBeforeMount(async () => {
-  await Promise.all([store.checkToken(), store.getMyInfo()]);
+  try {
+    isLoading.value = true;
+    const isValidToken = await store.checkToken();
+
+    if (isValidToken) {
+      await store.getMyInfo();
+    } else {
+      console.log("invalid token");
+      store.isAuth = false;
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    isLoading.value = false;
+  }
 });
 </script>
 

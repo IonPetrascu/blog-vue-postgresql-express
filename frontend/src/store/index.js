@@ -15,7 +15,7 @@ export const useStore = defineStore('store', () => {
       isAuth.value = false
       router.push("/login");
       console.error("No token found");
-      return
+      return null
     }
     isAuth.value = true
     return token;
@@ -39,6 +39,7 @@ export const useStore = defineStore('store', () => {
 
     const { token } = await response.json();
     localStorage.setItem("token", `Bearer ${token}`);
+    await getMyInfo();
     router.push("/");
   };
 
@@ -73,15 +74,16 @@ export const useStore = defineStore('store', () => {
         }
       });
 
-      if (!response.ok) {
+      if (response.status === 401) {
+        isAuth.value = false
+        router.push("/login");
         throw new Error("Failed to fetch your info");
       }
 
       const { user } = await response.json();
       userInfo.value = user
-
+      return user
     } catch (err) {
-      console.error(err.message);
       return { error: err.message };
     }
   };
