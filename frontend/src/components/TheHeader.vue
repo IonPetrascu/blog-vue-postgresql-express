@@ -19,6 +19,9 @@ const store = useStore();
         >Profile</RouterLink
       >
       <RouterLink class="link" to="/chats">Chats</RouterLink>
+      <button class="exit-btn" @click="store.logout">
+        <img src="../assets/exit.svg" alt="exit" />
+      </button>
     </nav>
   </header>
 </template>
@@ -61,5 +64,11 @@ const store = useStore();
 }
 .link:hover {
   color: var(--rose);
+}
+.exit-btn {
+  width: 20px;
+}
+.exit-btn img {
+  width: 100%;
 }
 </style>

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router';
+import { googleLogout } from "vue3-google-login";
 
 export const useStore = defineStore('store', () => {
   const isAuth = ref(false)
@@ -498,6 +499,16 @@ export const useStore = defineStore('store', () => {
     }
   };
 
+  const logout = () => {
+    let confirmExit = confirm("Are you sure you want to exit?");
+
+    if (!confirmExit) return
+
+    isAuth.value = false
+    localStorage.clear('token')
+    router.push('/login')
+    googleLogout();
+  }
   return {
     isAuth,
     posts,
@@ -521,6 +532,7 @@ export const useStore = defineStore('store', () => {
     subscribeToUser,
     deleteSubscription,
     getMyInfo,
-    checkCredential
+    checkCredential,
+    logout
   }
 })
