@@ -2,47 +2,15 @@
 import { ref } from "vue";
 import { useStore } from "../store";
 import { GoogleLogin } from "vue3-google-login";
-import { useRouter } from "vue-router";
+
 const email = ref("");
 const password = ref("");
 const store = useStore();
-const router = useRouter();
 
 const handleSubmit = () => store.loginUser(email.value, password.value);
-
-const callback = (response) => {
-  if (response && response.credential) {
-    const credential = response.credential;
-
-    sendTokenToServer(credential);
-  } else {
-    console.error("No credential found in response:", response);
-  }
-};
-
-const sendTokenToServer = async (credential) => {
-  try {
-    const response = await fetch("http://localhost:3000/api/auth/google", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token: credential }),
-    });
-
-    const result = await response.json();
-    if (result.usertToken) {
-      localStorage.setItem("token", `Bearer ${result.usertToken}`);
-      await store.getMyInfo();
-      router.push("/");
-    }
-  } catch (error) {
-    console.error("Error sending token to server:", error);
-  }
-};
 </script>
 <template>
-  <div>
+  <div class="wrapper">
     <h3>Login</h3>
     <form class="form" @submit.prevent="handleSubmit">
       <input
@@ -59,21 +27,56 @@ const sendTokenToServer = async (credential) => {
       />
       <button type="submit">Register</button>
     </form>
-    <GoogleLogin :callback="callback" />
+    <GoogleLogin :callback="store.checkCredential" />
   </div>
 </template>
 <style scoped>
+.wrapper {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  height: calc(100% - 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding-inline: 10px;
+}
+h3 {
+  font-size: 1.7em;
+  font-weight: 600;
+  text-align: center;
+}
 .form {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 320px;
+  width: 100%;
+  max-width: 500px;
 }
 .form input {
-  padding: 5px;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background: var(--c-1);
+  outline: none;
 }
 button {
-  background: green;
+  background: var(--c-4);
+  border-radius: 5px;
   padding: 10px;
+}
+.google-btn {
+  width: 100%;
+  background: var(--white);
+  border: 1px solid var(--c-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 5px;
+}
+.google-btn img {
+  width: 20px;
 }
 </style>
