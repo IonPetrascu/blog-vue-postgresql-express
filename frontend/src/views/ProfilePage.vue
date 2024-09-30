@@ -11,6 +11,7 @@ const router = useRouter();
 const showSubscribers = ref(false);
 const popupDataType = ref("");
 const userId = computed(() => route.params.id);
+const showImgSettings = ref(false);
 
 const isMyProfile = computed(() => {
   if (store.userInfo) {
@@ -55,6 +56,24 @@ const following = () => store.subscribeToUser(userId.value);
 const removeFollowing = () => store.deleteSubscription(userId.value);
 const closePopup = () => (showSubscribers.value = false);
 
+const handleImgSettings = () => {
+  showImgSettings.value = !showImgSettings.value;
+};
+
+const handleImageChange = async (event) => {
+  try {
+    const file = event.target.files[0];
+    const formData = new FormData();
+
+    if (!file) throw new Error("Error");
+    formData.append("img", file);
+    await store.changeProfileImg(formData);
+    handleImgSettings();
+  } catch (error) {
+    console.error("Error on change img:", error);
+  }
+};
+
 onMounted(() => store.getUserInfo(userId.value));
 
 watch(
@@ -70,9 +89,35 @@ watch(
     <div class="profile-banner"></div>
     <div class="profile-content">
       <div class="profile-header">
-        <button class="profile-avatar">
-          <img src="../assets/default-user-img.jpg" alt="Profile Image" />
-        </button>
+        <div class="profile-avatar">
+          <img
+            v-if="store.profile?.user?.img"
+            :src="`http://localhost:3000/${store.profile.user.img}`"
+            alt="Profile Image"
+          />
+          <img
+            v-else
+            src="../assets/default-user-img.jpg"
+            alt="Profile Image"
+          />
+          <button
+            v-if="isMyProfile"
+            @click="handleImgSettings"
+            class="profile-avatar-settings"
+          >
+            <img src="../assets/settings.svg" alt="settings img" />
+          </button>
+          <div class="avatar-settings-list" v-if="showImgSettings">
+            <input
+              ref="inputImg"
+              id="input-file"
+              multiple
+              type="file"
+              accept="image/jpeg, image/png ,image/jpg"
+              @change="handleImageChange"
+            />
+          </div>
+        </div>
         <button v-if="isMyProfile" class="profile-edit-button">Edit</button>
       </div>
       <div class="profile-details">
@@ -157,10 +202,13 @@ watch(
 }
 .profile-avatar {
   width: 150px;
+  position: relative;
 }
 .profile-avatar img {
   width: 100%;
   border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
 }
 .profile-edit-button {
   align-self: flex-end;
@@ -191,5 +239,22 @@ watch(
   gap: 10px;
   font-size: 1.4em;
   margin-top: 10px;
+}
+.profile-avatar-settings {
+  position: absolute;
+  transition: all 0.4s ease;
+}
+.profile-avatar-settings:hover {
+  transform: rotate(45deg);
+}
+.profile-avatar-settings img {
+  width: 20px;
+  height: 20px;
+}
+.avatar-settings-list {
+  position: absolute;
+  top: 20px;
+  padding: 10px;
+  background: var(--white);
 }
 </style>

@@ -525,6 +525,37 @@ export const useStore = defineStore('store', () => {
     router.push('/login')
     googleLogout();
   }
+
+
+  const changeProfileImg = async (formData) => {
+    try {
+      const token = checkToken();
+
+      const response = await fetch("http://localhost:3000/profile-img", {
+        method: "PATCH",
+        headers: {
+          Authorization: token
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add post");
+      }
+
+      const data = await response.json();
+
+      profile.value.user.img = data.user.img;
+      return data
+    } catch (err) {
+      err.value = err.message;
+    }
+
+
+  };
+
+
+
   return {
     isAuth,
     posts,
@@ -549,6 +580,7 @@ export const useStore = defineStore('store', () => {
     deleteSubscription,
     getMyInfo,
     checkCredential,
-    logout
+    logout,
+    changeProfileImg
   }
 })

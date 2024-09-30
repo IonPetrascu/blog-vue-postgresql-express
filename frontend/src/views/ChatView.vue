@@ -135,6 +135,13 @@ onUnmounted(() => {
           }"
         >
           <img
+            v-if="chat.user_img"
+            class="chat-item-img"
+            :src="`http://localhost:3000/${chat.user_img}`"
+            alt=""
+          />
+          <img
+            v-else
             class="chat-item-img"
             src="../assets/default-user-img.jpg"
             alt=""
@@ -159,6 +166,13 @@ onUnmounted(() => {
     <div v-if="activeChatId !== null" class="chat-wrapper">
       <div class="chat-header">
         <img
+          v-if="activeChat.user_img"
+          class="chat-img-user"
+          :src="`http://localhost:3000/${activeChat.user_img}`"
+          alt=""
+        />
+        <img
+          v-else
           class="chat-img-user"
           src="../assets/default-user-img.jpg"
           alt=""
@@ -200,6 +214,13 @@ onUnmounted(() => {
             <div class="message" v-if="msg.user_id !== store.userInfo.id">
               <div>
                 <img
+                  v-if="activeChat.user_img"
+                  class="user-img"
+                  :src="`http://localhost:3000/${activeChat.user_img}`"
+                  alt=""
+                />
+                <img
+                  v-else
                   class="user-img"
                   src="../assets/default-user-img.jpg"
                   alt=""
@@ -214,7 +235,7 @@ onUnmounted(() => {
               <div>
                 <img
                   class="user-img"
-                  src="../assets/default-user-img.jpg"
+                  :src="`http://localhost:3000/${store.userInfo.img}`"
                   alt=""
                 />
               </div>
@@ -370,6 +391,8 @@ onUnmounted(() => {
 }
 .chat-img-user {
   width: 40px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
   border-radius: 50%;
 }
 .chat-settings {
@@ -451,6 +474,8 @@ onUnmounted(() => {
 }
 .user-img {
   width: 30px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
   border-radius: 50%;
 }
 .time {

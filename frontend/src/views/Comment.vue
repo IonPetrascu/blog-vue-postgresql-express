@@ -70,6 +70,13 @@ const handleVote = async (is_like) => {
       <div class="header-comment">
         <div class="comment-author-info">
           <img
+            v-if="localComment.u_img"
+            class="comment-img"
+            :src="`http://localhost:3000/${localComment.u_img}`"
+            alt=""
+          />
+          <img
+            v-else
             class="comment-img"
             src="../assets/default-user-img.jpg"
             alt=""

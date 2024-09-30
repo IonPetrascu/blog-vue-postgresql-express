@@ -80,10 +80,17 @@ const clearInput = () => (newComment.value = "");
           :alt="post.title"
         />
         <div class="post-info">
+          <router-link :to="`/profile/${post.u_id}`" class="author-wrapper">
+            <img
+              class="post-author-img"
+              :src="`http://localhost:3000/${post.u_img}`"
+              :alt="post.u_name"
+            /><span class="post-info-author">Author: {{ post.u_name }}</span>
+          </router-link>
+
           <span v-if="post.created_at !== undefined" class="post-info-date">{{
             post.created_at.slice(0, 10)
           }}</span>
-          <span class="post-info-author">Author: {{ post.u_name }}</span>
         </div>
       </div>
       <p class="description">{{ post.content }}</p>
@@ -91,6 +98,13 @@ const clearInput = () => (newComment.value = "");
     <form class="form-comment" @submit.prevent="submitComment">
       <router-link to="/my-profile">
         <img
+          v-if="store.userInfo.img"
+          class="user-img"
+          :src="`http://localhost:3000/${store.userInfo.img}`"
+          :alt="store.userInfo.u_name"
+        />
+        <img
+          v-else
           class="user-img"
           src="../assets/default-user-img.jpg"
           :alt="post.u_name"
@@ -184,11 +198,7 @@ const clearInput = () => (newComment.value = "");
   z-index: 1;
   padding: 10px 5px;
 }
-.post-info-author {
-  background: var(--white);
-  padding: 5px;
-  border-radius: 4px;
-}
+
 .post-info-date {
   background: var(--white);
   padding: 5px;
@@ -251,5 +261,16 @@ const clearInput = () => (newComment.value = "");
 }
 .description {
   margin-block: 20px;
+}
+.post-author-img {
+  width: 30px;
+  aspect-ratio: 1/1;
+}
+.author-wrapper {
+  display: flex;
+  align-items: center;
+  padding-right: 5px;
+  background: var(--white);
+  gap: 10px;
 }
 </style>
