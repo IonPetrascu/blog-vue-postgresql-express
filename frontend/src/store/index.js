@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router';
+import { googleLogout } from "vue3-google-login";
 
 export const useStore = defineStore('store', () => {
   const isAuth = ref(false)
@@ -228,13 +229,29 @@ export const useStore = defineStore('store', () => {
         })
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create chat");
+      switch (response.status) {
+        case 200:
+          const existingChatData = await response.json();
+          return { success: true, message: "Chat already exists", chat: existingChatData.chat };
+        case 201:
+          const createdChatData = await response.json();
+          return { success: true, message: "Chat created", chat: createdChatData };
+        case 400:
+          const badRequestMessage = await response.text();
+          return { success: false, message: badRequestMessage };
+        case 401:
+          return { success: false, message: "Unauthorized" };
+        case 500:
+          console.log("Server error");
+          return { success: false, message: "Server error" };
+        default:
+          console.log("Unexpected status:", response.status);
+          return { success: false, message: "Unexpected error" };
       }
-      const chats = await response.json()
-      return chats
     } catch (err) {
-      err.value = err.message;
+      console.log("Error creating chat:", err);
+      return { success: false, message: "Network or server error" };
+
     }
 
   };
@@ -498,6 +515,16 @@ export const useStore = defineStore('store', () => {
     }
   };
 
+  const logout = () => {
+    let confirmExit = confirm("Are you sure you want to exit?");
+
+    if (!confirmExit) return
+
+    isAuth.value = false
+    localStorage.clear('token')
+    router.push('/login')
+    googleLogout();
+  }
   return {
     isAuth,
     posts,
@@ -521,6 +548,7 @@ export const useStore = defineStore('store', () => {
     subscribeToUser,
     deleteSubscription,
     getMyInfo,
-    checkCredential
+    checkCredential,
+    logout
   }
 })

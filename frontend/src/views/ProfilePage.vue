@@ -35,7 +35,7 @@ const isSubscribed = computed(() => {
 
 const createChat = async () => {
   const res = await store.createChat(userId.value, "New chat");
-  if (res) {
+  if (res.success) {
     goToChats();
   }
 };

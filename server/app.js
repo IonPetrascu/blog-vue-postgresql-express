@@ -547,6 +547,15 @@ app.post('/chats', verifyToken, async (req, res) => {
   }
 
   try {
+    const existingChat = await client.query(`
+      SELECT c.* FROM chats c
+      JOIN chat_users cu1 ON cu1.chat_id = c.id AND cu1.user_id = $1
+      JOIN chat_users cu2 ON cu2.chat_id = c.id AND cu2.user_id = $2
+    `, [user_id, other_user_id]);
+
+    if (existingChat.rows.length > 0) {
+      return res.status(200).json({ message: 'Chat already exists', chat: existingChat.rows[0] });
+    }
     // Вставка нового чата
     const chatResult = await client.query(
       'INSERT INTO chats (name, is_private) VALUES ($1, $2) RETURNING *',
@@ -564,7 +573,7 @@ app.post('/chats', verifyToken, async (req, res) => {
       [chatId, other_user_id]
     );
 
-    res.status(200).json(chatResult.rows[0]);
+    res.status(201).json({ message: 'Chat created successfully', chat: chatResult.rows[0] });
   } catch (err) {
     console.error('Error creating chat:', err);
     res.status(500).send('Error creating chat');
