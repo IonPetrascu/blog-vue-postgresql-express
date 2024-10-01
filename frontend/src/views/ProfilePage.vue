@@ -192,7 +192,7 @@ watch(
 }
 .profile-content {
   padding: 0 20px;
-  transform: translateY(-30%);
+  margin-top: -70px;
   display: flex;
   flex-direction: column;
   gap: 15px;
