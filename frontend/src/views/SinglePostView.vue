@@ -11,7 +11,9 @@ const post = ref(null);
 const comments = ref([]);
 const newComment = ref("");
 const respondCommentId = ref(null);
+const respondCommentName = ref(null);
 const commentsKey = ref(0);
+const commentInput = ref(null);
 
 onMounted(async () => {
   post.value = await store.getSinglePost(id);
@@ -40,9 +42,19 @@ const submitComment = async () => {
   comments.value = await store.getComments(id);
 };
 
-const setRespondCommentId = (id) => (respondCommentId.value = id);
+const setRespondCommentId = (data) => {
+  respondCommentId.value = data.id;
+  respondCommentName.value = data.name;
 
-const removeRespondCommentId = () => (respondCommentId.value = null);
+  if (commentInput.value) {
+    commentInput.value.focus();
+  }
+};
+
+const removeRespondCommentId = () => {
+  respondCommentId.value = null;
+  respondCommentName.value = null;
+};
 
 const addVoteToComment = async ({
   is_like,
@@ -119,11 +131,13 @@ const clearInput = () => (newComment.value = "");
               class="btn-clear"
               @click="removeRespondCommentId"
             >
-              X
+              <img src="../assets/close.svg" alt="close" />
             </button>
-            {{ respondCommentId }}
+            {{ respondCommentName }}
           </div>
           <input
+            ref="commentInput"
+            @blur="removeRespondCommentId"
             v-model="newComment"
             type="text"
             placeholder="Your comment"
@@ -131,7 +145,14 @@ const clearInput = () => (newComment.value = "");
           />
         </div>
         <div class="btns-wrapper">
-          <button @click="clearInput" type="button" class="btn">Cancel</button>
+          <button
+            v-if="newComment.length > 0"
+            @click="clearInput"
+            type="button"
+            class="btn"
+          >
+            Cancel
+          </button>
           <button type="submit" class="btn">Send</button>
         </div>
       </div>
@@ -272,5 +293,19 @@ const clearInput = () => (newComment.value = "");
   padding-right: 5px;
   background: var(--white);
   gap: 10px;
+}
+.response-info {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 5px;
+  background: var(--c-1);
+  margin-right: 10px;
+}
+.btn-clear {
+}
+.btn-clear img {
+  width: 20px;
+  margin-right: 10px;
 }
 </style>

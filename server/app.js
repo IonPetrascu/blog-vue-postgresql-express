@@ -344,7 +344,6 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
                          posts.id = $1`;
   try {
     const result = await client.query(insertQuery, [postId]);
-    console.log(result.rows);
 
     res.status(200).json(result.rows[0]);
   } catch (error) {
