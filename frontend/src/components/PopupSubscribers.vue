@@ -26,7 +26,17 @@ const emit = defineEmits(["closePopup"]);
           :key="subscriber.subscriber_id"
         >
           <div>
-            <img class="sub-img" src="../assets/default-user-img.jpg" alt="" />
+            <img
+              v-if="subscriber.img"
+              class="sub-img"
+              :src="`http://localhost:3000/${subscriber.img}`"
+            />
+            <img
+              v-else
+              class="sub-img"
+              src="../assets/default-user-img.jpg"
+              alt=""
+            />
           </div>
           <router-link
             class="user-info"

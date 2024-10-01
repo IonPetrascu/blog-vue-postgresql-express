@@ -1,5 +1,5 @@
 <script setup>
-import { defineProps, defineEmits, ref } from "vue";
+import { defineProps, defineEmits, ref, compile } from "vue";
 import Comment from "./Comment.vue";
 import { useStore } from "../store";
 
@@ -8,13 +8,22 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  userId: {
+    type: Number,
+  },
+  userName: {
+    type: String,
+  },
 });
 const store = useStore();
 const emit = defineEmits(["setRespondCommentId", "addVoteToComment"]);
 const localComment = ref({ ...props.comment });
 
 const handleRespond = () => {
-  emit("setRespondCommentId", localComment.value.id);
+  emit("setRespondCommentId", {
+    id: localComment.value.id,
+    name: localComment.value.u_name,
+  });
 };
 
 const handleVote = async (is_like) => {
@@ -70,6 +79,13 @@ const handleVote = async (is_like) => {
       <div class="header-comment">
         <div class="comment-author-info">
           <img
+            v-if="localComment.u_img"
+            class="comment-img"
+            :src="`http://localhost:3000/${localComment.u_img}`"
+            alt=""
+          />
+          <img
+            v-else
             class="comment-img"
             src="../assets/default-user-img.jpg"
             alt=""
@@ -81,9 +97,7 @@ const handleVote = async (is_like) => {
         </div>
 
         <div class="body-comment">
-          <span class="respond-to-person">{{
-            localComment.parent_comment_id
-          }}</span>
+          <span class="respond-to-person">{{ userName }}</span>
           <p class="comment-text">{{ localComment.content }}</p>
         </div>
       </div>
@@ -112,6 +126,8 @@ const handleVote = async (is_like) => {
         v-for="reply in localComment.replies"
         :key="reply.id"
         :comment="reply"
+        :userId="localComment.user_id"
+        :userName="localComment.u_name"
         @setRespondCommentId="emit('setRespondCommentId', $event)"
         @addVoteToComment="emit('addVoteToComment', $event)"
       />
@@ -175,7 +191,8 @@ const handleVote = async (is_like) => {
   color: var(--orange);
 }
 .respond-to-person {
-  color: var(--orange);
+  color: blue;
+  font-weight: 600;
 }
 .like-img,
 .dislike-img {

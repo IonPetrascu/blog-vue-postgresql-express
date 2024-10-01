@@ -46,6 +46,13 @@ const deletePost = () => store.deletePost(props.post.id);
       <div class="post-bottom">
         <div class="post-info">
           <img
+            v-if="post.user_img"
+            class="post-author-img"
+            :src="`http://localhost:3000/${post.user_img}`"
+            :alt="post.user_name"
+          />
+          <img
+            v-else
             class="post-author-img"
             src="../assets/default-user-img.jpg"
             :alt="post.user_name"
@@ -183,6 +190,7 @@ const deletePost = () => store.deletePost(props.post.id);
 }
 .post-author-img {
   width: 25px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   object-fit: cover;
 }

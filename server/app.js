@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const path = require('path')
 const http = require('http');
 const { OAuth2Client } = require("google-auth-library");
+const fs = require('fs')
 
 const clientGoogle = new OAuth2Client(process.env.CLIENT_ID);
 client.connect();
@@ -250,8 +251,6 @@ app.post('/posts', verifyToken, async (req, res) => {
       });
     }
 
-
-    // Запрос к базе данных
     const insertQuery = fileName
       ? `INSERT INTO posts(title, content, user_id, img) VALUES($1, $2, $3, $4) RETURNING *`
       : `INSERT INTO posts(title, content, user_id) VALUES($1, $2, $3) RETURNING *`;
@@ -305,13 +304,14 @@ SELECT
   COUNT(c.id)::INTEGER AS comments_count,
   ur.id AS user_id,
   ur.u_name AS user_name,
-  ur.u_email AS user_email
+  ur.u_email AS user_email,
+  ur.img AS user_img
 FROM posts p
 LEFT JOIN like_dislike_counts lc ON p.id = lc.post_id
 LEFT JOIN user_votes uv ON p.id = uv.post_id
 LEFT JOIN comments c ON p.id = c.post_id
 LEFT JOIN "usersReg" ur ON p.user_id = ur.id
-GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote,ur.id, ur.u_name, ur.u_email
+GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote,ur.id, ur.u_name, ur.u_email, ur.img
 ORDER BY p.created_at DESC;
     `;
 
@@ -332,8 +332,10 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
 
   const insertQuery = `SELECT
                          posts.*,
+                         "usersReg".id AS u_id,
                          "usersReg".u_name,
-                         "usersReg".u_email
+                         "usersReg".u_email,
+                         "usersReg".img AS u_img
                        FROM
                          posts
                        JOIN
@@ -342,6 +344,7 @@ app.get('/posts/:id', verifyToken, async (req, res) => {
                          posts.id = $1`;
   try {
     const result = await client.query(insertQuery, [postId]);
+
     res.status(200).json(result.rows[0]);
   } catch (error) {
     console.error('Error on get post:', error);
@@ -394,6 +397,7 @@ app.get('/comments/:id', verifyToken, async (req, res) => {
     )
     SELECT
       comments.*,
+      "usersReg".img AS u_img,
       "usersReg".u_name,
       COALESCE(comment_likes.like_count, 0) AS like_count,
       COALESCE(comment_likes.dislike_count, 0) AS dislike_count,
@@ -507,6 +511,7 @@ app.get('/chats', verifyToken, async (req, res) => {
   chats.id AS chat_id,
   chats.name,
   "usersReg".id AS user_id,
+  "usersReg".img AS user_img,
   "usersReg".u_name AS user_name,
   last_message.id AS message_id,
   last_message.content AS last_message_content,
@@ -612,7 +617,6 @@ app.post('/subscriptions/:id', verifyToken, async (req, res) => {
   }
 });
 
-
 app.delete('/subscriptions/:id', verifyToken, async (req, res) => {
 
   if (!req.user) {
@@ -657,9 +661,10 @@ app.get('/profile/:id', verifyToken, async (req, res) => {
   const userId = req.params.id
 
   try {
-    const queryUserInfo = `SELECT id AS user_id, u_name, u_email
+    const queryUserInfo = `SELECT id AS user_id, u_name, u_email ,img
     FROM "usersReg"
     WHERE id = $1;`;
+
     const userInfoResult = await client.query(queryUserInfo, [userId]);
 
     if (userInfoResult.rows.length === 0) {
@@ -700,14 +705,15 @@ SELECT
   uv.user_vote,
   COUNT(c.id)::INTEGER AS comments_count,
   ur.u_name AS user_name,
-  ur.u_email AS user_email
+  ur.u_email AS user_email,
+  ur.img AS user_img
 FROM posts p
 LEFT JOIN like_dislike_counts lc ON p.id = lc.post_id
 LEFT JOIN user_votes uv ON p.id = uv.post_id
 LEFT JOIN comments c ON p.id = c.post_id
 LEFT JOIN "usersReg" ur ON p.user_id = ur.id
 WHERE p.user_id = $1
-GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote, ur.id, ur.u_name, ur.u_email
+GROUP BY p.id, lc.likes_count, lc.dislikes_count, uv.user_vote, ur.id, ur.u_name, ur.u_email, ur.img
 ORDER BY p.created_at DESC;
 `;
 
@@ -715,14 +721,14 @@ ORDER BY p.created_at DESC;
 
 
     //get subscribers
-    const querySubscribers = `SELECT u.id AS subscriber_id, u.u_name, u.u_email
+    const querySubscribers = `SELECT u.id AS subscriber_id, u.u_name, u.u_email, u.img
       FROM subscriptions s
       JOIN "usersReg" u ON u.id = s.subscriber_id
       WHERE s.subscribed_to_id = $1;`;
     const subscribersResult = await client.query(querySubscribers, [userId]);
 
     // get subscriptions
-    const querySubscriptions = `SELECT u.id AS subscribed_to_id, u.u_name, u.u_email
+    const querySubscriptions = `SELECT u.id AS subscribed_to_id, u.u_name, u.u_email, u.img
       FROM subscriptions s
       JOIN "usersReg" u ON u.id = s.subscribed_to_id
       WHERE s.subscriber_id = $1;`;
@@ -743,6 +749,61 @@ ORDER BY p.created_at DESC;
     res.status(500).json({ message: "Error on get profile" });
   }
 })
+
+app.patch('/profile-img', verifyToken, async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).send('Token not found');
+    }
+
+    const userId = req.user.id;
+    const img = req.files ? req.files.img : null;
+
+    if (img) {
+      const currentUser = await client.query(
+        'SELECT img FROM "usersReg" WHERE id = $1',
+        [userId]
+      );
+
+      if (currentUser.rowCount === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const currentImg = currentUser.rows[0].img;
+      const currentImgPath = currentImg ? path.resolve(__dirname, '..', 'server/static', currentImg) : null;
+
+      if (currentImg && fs.existsSync(currentImgPath)) {
+        fs.unlinkSync(currentImgPath);
+      }
+
+      const fileName = uuidv4() + '.jpg';
+      const filePath = path.resolve(__dirname, '..', 'server/static', fileName);
+
+      img.mv(filePath, async (err) => {
+        if (err) {
+          console.error('Error changing profile img:', err);
+          return res.status(500).send({ message: 'Error changing image' });
+        }
+
+        const result = await client.query(
+          'UPDATE "usersReg" SET img = $1 WHERE id = $2 RETURNING *',
+          [fileName, userId]
+        );
+
+        if (result.rowCount === 0) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.status(200).json({ message: 'Profile image updated successfully', user: result.rows[0] });
+      });
+    } else {
+      return res.status(400).json({ message: 'No image file provided' });
+    }
+  } catch (err) {
+    console.error('Error on update profile image:', err);
+    res.status(500).json({ message: "Error on update profile image" });
+  }
+});
 
 app.post('/api/auth/google', async (req, res) => {
 

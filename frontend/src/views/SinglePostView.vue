@@ -11,7 +11,9 @@ const post = ref(null);
 const comments = ref([]);
 const newComment = ref("");
 const respondCommentId = ref(null);
+const respondCommentName = ref(null);
 const commentsKey = ref(0);
+const commentInput = ref(null);
 
 onMounted(async () => {
   post.value = await store.getSinglePost(id);
@@ -40,9 +42,19 @@ const submitComment = async () => {
   comments.value = await store.getComments(id);
 };
 
-const setRespondCommentId = (id) => (respondCommentId.value = id);
+const setRespondCommentId = (data) => {
+  respondCommentId.value = data.id;
+  respondCommentName.value = data.name;
 
-const removeRespondCommentId = () => (respondCommentId.value = null);
+  if (commentInput.value) {
+    commentInput.value.focus();
+  }
+};
+
+const removeRespondCommentId = () => {
+  respondCommentId.value = null;
+  respondCommentName.value = null;
+};
 
 const addVoteToComment = async ({
   is_like,
@@ -80,10 +92,17 @@ const clearInput = () => (newComment.value = "");
           :alt="post.title"
         />
         <div class="post-info">
+          <router-link :to="`/profile/${post.u_id}`" class="author-wrapper">
+            <img
+              class="post-author-img"
+              :src="`http://localhost:3000/${post.u_img}`"
+              :alt="post.u_name"
+            /><span class="post-info-author">Author: {{ post.u_name }}</span>
+          </router-link>
+
           <span v-if="post.created_at !== undefined" class="post-info-date">{{
             post.created_at.slice(0, 10)
           }}</span>
-          <span class="post-info-author">Author: {{ post.u_name }}</span>
         </div>
       </div>
       <p class="description">{{ post.content }}</p>
@@ -91,6 +110,13 @@ const clearInput = () => (newComment.value = "");
     <form class="form-comment" @submit.prevent="submitComment">
       <router-link to="/my-profile">
         <img
+          v-if="store.userInfo.img"
+          class="user-img"
+          :src="`http://localhost:3000/${store.userInfo.img}`"
+          :alt="store.userInfo.u_name"
+        />
+        <img
+          v-else
           class="user-img"
           src="../assets/default-user-img.jpg"
           :alt="post.u_name"
@@ -105,11 +131,13 @@ const clearInput = () => (newComment.value = "");
               class="btn-clear"
               @click="removeRespondCommentId"
             >
-              X
+              <img src="../assets/close.svg" alt="close" />
             </button>
-            {{ respondCommentId }}
+            {{ respondCommentName }}
           </div>
           <input
+            ref="commentInput"
+            @blur="removeRespondCommentId"
             v-model="newComment"
             type="text"
             placeholder="Your comment"
@@ -117,7 +145,14 @@ const clearInput = () => (newComment.value = "");
           />
         </div>
         <div class="btns-wrapper">
-          <button @click="clearInput" type="button" class="btn">Cancel</button>
+          <button
+            v-if="newComment.length > 0"
+            @click="clearInput"
+            type="button"
+            class="btn"
+          >
+            Cancel
+          </button>
           <button type="submit" class="btn">Send</button>
         </div>
       </div>
@@ -184,11 +219,7 @@ const clearInput = () => (newComment.value = "");
   z-index: 1;
   padding: 10px 5px;
 }
-.post-info-author {
-  background: var(--white);
-  padding: 5px;
-  border-radius: 4px;
-}
+
 .post-info-date {
   background: var(--white);
   padding: 5px;
@@ -251,5 +282,30 @@ const clearInput = () => (newComment.value = "");
 }
 .description {
   margin-block: 20px;
+}
+.post-author-img {
+  width: 30px;
+  aspect-ratio: 1/1;
+}
+.author-wrapper {
+  display: flex;
+  align-items: center;
+  padding-right: 5px;
+  background: var(--white);
+  gap: 10px;
+}
+.response-info {
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 5px;
+  background: var(--c-1);
+  margin-right: 10px;
+}
+.btn-clear {
+}
+.btn-clear img {
+  width: 20px;
+  margin-right: 10px;
 }
 </style>
