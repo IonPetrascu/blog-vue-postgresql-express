@@ -281,7 +281,9 @@ onUnmounted(() => {
     </div>
     <div class="welcome-page" v-else>
       <div class="welcome-container">
-        <h1 class="welcome-title">Welcome to the chat of blog!</h1>
+        <h1 class="welcome-title">
+          Welcome to the chat of blog!
+        </h1>
         <p class="welcome-message">
           Here you can chat with friends and acquaintances. Choose a chat and
           start a conversation!

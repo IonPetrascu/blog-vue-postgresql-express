@@ -112,16 +112,6 @@ const closePopup = () => {
   padding: 5px 10px;
 }
 
-/* .v-enter-active,
-.v-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.v-enter-from,
-.v-leave-to {
-  opacity: 0;
-} */
-
 @keyframes gb-popup-scale-blur {
   0% {
     opacity: 0;

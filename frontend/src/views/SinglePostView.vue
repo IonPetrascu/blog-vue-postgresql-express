@@ -1,5 +1,5 @@
 <script setup>
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { useStore } from "../store";
 import { onMounted, ref, watch } from "vue";
 import Comment from "./Comment.vue";
@@ -7,6 +7,7 @@ import { VMarkdownView } from "vue3-markdown";
 import "vue3-markdown/dist/style.css";
 
 const route = useRoute();
+const router = useRouter();
 const id = route.params.id;
 const store = useStore();
 const post = ref(null);
@@ -81,19 +82,27 @@ const addVoteToComment = async ({
 };
 
 const clearInput = () => (newComment.value = "");
+
+const goBack = () => {
+  router.go(-1);
+};
 </script>
 
 <template>
   <div v-if="post !== null" class="post">
     <div>
+      <button @click="goBack" class="btn-back">
+        <img src="../assets/back.png" alt="back" />
+        <span>Back</span>
+      </button>
       <h1 class="post-title">{{ post.title }}</h1>
       <div class="img-wrapper">
-        <img
+        <div
           v-if="post.img"
-          class="post-img"
-          :src="`http://localhost:3000/${post.img}`"
-          :alt="post.title"
-        />
+          class="post-img bg-pan-bl"
+          :style="{ backgroundImage: `url(http://localhost:3000/${post.img})` }"
+          @load="checkImageSize"
+        ></div>
         <div class="post-info">
           <router-link :to="`/profile/${post.u_id}`" class="author-wrapper">
             <img
@@ -187,6 +196,7 @@ const clearInput = () => (newComment.value = "");
 .img-wrapper {
   position: relative;
   min-height: 40px;
+  overflow: hidden;
 }
 .post-comments {
   max-width: 800px;
@@ -214,7 +224,7 @@ const clearInput = () => (newComment.value = "");
 .post-img {
   width: 100%;
   height: 400px;
-  object-fit: cover;
+  background-size: cover;
 }
 .post-info {
   display: flex;
@@ -312,5 +322,44 @@ const clearInput = () => (newComment.value = "");
 .btn-clear img {
   width: 20px;
   margin-right: 10px;
+}
+
+.btn-back {
+  position: sticky;
+  display: flex;
+  align-items: center;
+  background: var(--c-4);
+  border-radius: 10px;
+  margin-left: -135px;
+  padding: 5px;
+  width: 100px;
+  z-index: 1;
+  top: 40px;
+}
+.btn-back img {
+  width: 25px;
+}
+.btn-back span {
+  margin-left: 10px;
+}
+
+.bg-pan-bl {
+  animation: bg-pan-bl 10s cubic-bezier(0.5, 0, 0.5, 1) both;
+}
+@keyframes bg-pan-bl {
+  0% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 50% 50%;
+  }
+  75% {
+    background-position: 0% 100%;
+  }
+  100% {
+    background-position: 50% 50%;
+  }
+}
+.btn-back {
 }
 </style>

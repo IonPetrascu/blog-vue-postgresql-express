@@ -25,9 +25,9 @@ const emit = defineEmits(["showPopupDelete"]);
     <div class="post-img-wrapper">
       <img
         v-if="post.img"
-        class="post-img"
+        class="post-img kenburns-bottom-left"
         :src="`http://localhost:3000/${post.img}`"
-        alt=""
+        :alt="post.title"
       />
       <img
         class="post-img"
@@ -242,5 +242,19 @@ const emit = defineEmits(["showPopupDelete"]);
 }
 .dislike-img {
   transform: rotate(180deg);
+}
+
+.kenburns-bottom-left {
+  animation: kenburns-bottom-left 7s ease-out both infinite alternate;
+}
+@keyframes kenburns-bottom-left {
+  0% {
+    transform: scale(1) translate(0, 0);
+    transform-origin: 16% 84%;
+  }
+  100% {
+    transform: scale(1.25) translate(-20px, 15px);
+    transform-origin: left bottom;
+  }
 }
 </style>

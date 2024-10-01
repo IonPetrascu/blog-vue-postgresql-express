@@ -1,9 +1,13 @@
 <script setup>
-import { onBeforeMount, ref } from "vue";
+import { onBeforeMount, ref, watch } from "vue";
 import { useStore } from "./store";
 import TheHeader from "./components/TheHeader.vue";
+import { useRoute } from "vue-router";
+
 const store = useStore();
 const isLoading = ref(true);
+const transitionName = ref("fade");
+const route = useRoute();
 
 onBeforeMount(async () => {
   try {
@@ -22,12 +26,28 @@ onBeforeMount(async () => {
     isLoading.value = false;
   }
 });
+
+watch(
+  () => route.path,
+  (newPath) => {
+    if (newPath.split("/")[1] === "post") {
+      transitionName.value = "slide";
+    } else {
+      transitionName.value = "fade";
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
   <main class="main">
     <TheHeader />
-    <RouterView />
+    <router-view v-slot="{ Component }">
+      <transition :name="transitionName" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </main>
 </template>
 
@@ -40,5 +60,27 @@ onBeforeMount(async () => {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: all 0.5s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
 }
 </style>
