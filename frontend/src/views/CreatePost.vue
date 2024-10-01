@@ -1,6 +1,8 @@
 <script setup>
 import { onMounted, ref } from "vue";
 import { useStore } from "../store";
+import { VMarkdownEditor } from "vue3-markdown";
+import "vue3-markdown/dist/style.css";
 
 const showFormPost = ref(true);
 const title = ref("");
@@ -49,11 +51,18 @@ const handleImageChange = (event) => {
     previewImage.value = URL.createObjectURL(file);
   }
 };
+
+const handleUpload = (file) => {
+  console.log(file);
+  return "https://i.postimg.cc/52qCzTVw/pngwing-com.png";
+};
 </script>
 <template>
   <div class="wrapper">
     <form class="form" @submit.prevent="handleSubmit" v-if="showFormPost">
+      <h3 class="title">Title post</h3>
       <input v-model="title" type="text" placeholder="Title of post" required />
+      <h3 class="title">Image post</h3>
       <div class="wrapper-img">
         <label v-if="!previewImage" class="label-file" for="input-file"
           >Add image of post</label
@@ -80,11 +89,13 @@ const handleImageChange = (event) => {
         accept="image/jpeg, image/png ,image/jpg"
         @change="handleImageChange"
       />
-      <textarea
+      <h3 class="title">Editor</h3>
+      <VMarkdownEditor
+        class="editor"
         v-model="description"
-        type="text"
-        placeholder="Enter description"
-      ></textarea>
+        locale="en"
+        :upload-action="handleUpload"
+      />
       <div class="buttons">
         <button @click="clearForm" type="button">Cancel</button>
         <button type="submit">Add post</button>
@@ -111,11 +122,6 @@ input:focus,
 textarea:focus {
   outline: none;
   background: var(--c-3);
-}
-
-textarea {
-  height: 300px;
-  resize: none;
 }
 
 .buttons {
@@ -161,5 +167,16 @@ input[type="file"] {
   cursor: pointer;
   width: max-content;
   border-radius: 10px;
+}
+
+.editor {
+  background: rgb(255, 250, 250) !important;
+  height: 300px;
+}
+.view {
+  border: 1px solid var(--c-4);
+  border-radius: 10px;
+  min-height: 100px;
+  padding: 10px;
 }
 </style>

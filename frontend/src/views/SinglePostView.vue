@@ -3,6 +3,8 @@ import { useRoute } from "vue-router";
 import { useStore } from "../store";
 import { onMounted, ref, watch } from "vue";
 import Comment from "./Comment.vue";
+import { VMarkdownView } from "vue3-markdown";
+import "vue3-markdown/dist/style.css";
 
 const route = useRoute();
 const id = route.params.id;
@@ -14,6 +16,7 @@ const respondCommentId = ref(null);
 const respondCommentName = ref(null);
 const commentsKey = ref(0);
 const commentInput = ref(null);
+const mode = ref("light");
 
 onMounted(async () => {
   post.value = await store.getSinglePost(id);
@@ -105,7 +108,11 @@ const clearInput = () => (newComment.value = "");
           }}</span>
         </div>
       </div>
-      <p class="description">{{ post.content }}</p>
+      <VMarkdownView
+        class="description"
+        :mode="mode"
+        :content="post.content"
+      ></VMarkdownView>
     </div>
     <form class="form-comment" @submit.prevent="submitComment">
       <router-link to="/my-profile">
@@ -301,8 +308,6 @@ const clearInput = () => (newComment.value = "");
   border-radius: 5px;
   background: var(--c-1);
   margin-right: 10px;
-}
-.btn-clear {
 }
 .btn-clear img {
   width: 20px;
