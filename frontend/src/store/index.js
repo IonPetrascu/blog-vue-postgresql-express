@@ -181,10 +181,13 @@ export const useStore = defineStore('store', () => {
         throw new Error("Failed delete post");
       }
       const data = await response.json()
-      posts.value = posts.value.filter((post) => post.id !== post_id)
-      profile.value.posts = profile.value.posts.filter((post) => post.id !== post_id)
-      return data
 
+      posts.value = posts.value.filter((post) => post.id !== post_id)
+
+      if (profile.value && profile.value.posts) {
+        profile.value.posts = profile.value.posts.filter((post) => post.id !== post_id);
+      }
+      return data
     } catch (err) {
       console.error(err);
       return err;

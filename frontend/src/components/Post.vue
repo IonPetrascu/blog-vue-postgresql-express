@@ -11,12 +11,12 @@ const store = useStore();
 const datePost = computed(() => transformToLocalTime(props.post.created_at));
 
 const handleVote = (vote) => store.addVoteToPost(vote, props.post.id, "post");
-const deletePost = () => store.deletePost(props.post.id);
+const emit = defineEmits(["showPopupDelete"]);
 </script>
 <template>
   <div class="post">
     <button
-      @click="deletePost"
+      @click="() => emit('showPopupDelete', post.id, post.title)"
       v-if="post.user_id === store.userInfo?.id"
       class="delete-post-btn"
     >
