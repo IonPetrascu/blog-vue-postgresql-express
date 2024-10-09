@@ -23,7 +23,7 @@ const isMyProfile = computed(() => {
 const popupData = computed(() => {
   return popupDataType.value === "subscribers"
     ? store.profile?.subscribers
-    : store.profile?.subscriptions;
+    : store.profile?.subscribtions;
 });
 
 const isSubscribed = computed(() => {
@@ -164,7 +164,7 @@ watch(
         </div>
         <div class="profile-stat-item">
           <span class="profile-stat-number">{{
-            store.profile?.subscriptions.length
+            store.profile?.subscribtions.length
           }}</span>
           <button @click="openSubscriptionsPopup" class="profile-stat-label">
             Following

@@ -564,10 +564,5 @@ onUnmounted(() => {
   justify-content: center;
   gap: 20px;
 }
-.welcome-btn {
-}
-.close-btn {
-}
-.send-btn {
-}
+
 </style>

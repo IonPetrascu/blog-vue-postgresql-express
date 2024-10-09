@@ -399,8 +399,8 @@ app.get('/comments/:id', verifyToken, async (req, res) => {
       comments.*,
       "usersReg".img AS u_img,
       "usersReg".u_name,
-      COALESCE(comment_likes.like_count, 0) AS like_count,
-      COALESCE(comment_likes.dislike_count, 0) AS dislike_count,
+      COALESCE(comment_likes.like_count::int, 0) AS like_count,
+      COALESCE(comment_likes.dislike_count::int, 0) AS dislike_count,
       user_likes.vote_type AS user_vote
     FROM comments
     INNER JOIN "usersReg" ON comments.user_id = "usersReg".id
@@ -661,7 +661,7 @@ app.get('/profile/:id', verifyToken, async (req, res) => {
   const userId = req.params.id
 
   try {
-    const queryUserInfo = `SELECT id AS user_id, u_name, u_email ,img
+    const queryUserInfo = `SELECT id, u_name, u_email ,img
     FROM "usersReg"
     WHERE id = $1;`;
 
@@ -739,7 +739,7 @@ ORDER BY p.created_at DESC;
       user: userInfoResult.rows[0],
       posts: postsResult.rows,
       subscribers: subscribersResult.rows,
-      subscriptions: subscriptionsResult.rows,
+      subscribtions: subscriptionsResult.rows,
     };
 
     res.status(200).json(profileData);
